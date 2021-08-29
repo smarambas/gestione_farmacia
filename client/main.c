@@ -5,6 +5,8 @@
 
 #include "defines.h"
 
+static MYSQL *conn;
+
 int main(void) 
 {
     printf("\nHello World!\n\n");
