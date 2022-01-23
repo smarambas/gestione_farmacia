@@ -1,50 +1,55 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <mysql.h>
 
-#include "defines.h"
+#include "view/login.h"
+#include "controller/login.h"
+#include "model/db.h"
+#include "utils/dotenv.h"
+#include "utils/io.h"
+#include "utils/validation.h"
 
-static char *opt_host_name = NULL; /* host (default=localhost) */
-static char *opt_user_name = "personale_medico"; /* username (default=login name)*/
-static char *opt_password = NULL; /* password (default=none) */
-static unsigned int opt_port_num = 0; /* port number (use built-in) */
-static char *opt_socket_name = NULL; /* socket name (use built-in) */
-static char *opt_db_name = "gestione-farmacia"; /* database name (default=none) */
-static unsigned int opt_flags = 0; /* connection flags (none) */
-static MYSQL *conn; /* pointer to connection handler */
-
-int main(int argc, char **argv) 
+#define check_env_failing(varname)                                          \
+if(getenv((varname)) == NULL) {                                             \
+        fprintf(stderr, "[FATAL] env variable %s not set\n", (varname));    \
+        ret = false;                                                        \
+}
+static bool validate_dotenv(void)
 {
-    /* initialize connection handler */
-    
-    printf("Initializing connection handler\n");
-    
-    conn = mysql_init(NULL);
-    if(conn == NULL) {
-        fprintf(stderr, "mysql_init() failed\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    printf("Trying to connect to server...\n");
-    
-    /* connect to server */
-    if (mysql_real_connect (conn, opt_host_name, opt_user_name,
-        opt_password, opt_db_name, opt_port_num, opt_socket_name,
-        opt_flags) == NULL) {
-            fprintf(stderr, "mysql_real_connect() failed\n");
-            mysql_close(conn);
-            exit(EXIT_FAILURE);
-    }
-    
-    printf("Connection established!\n");
-    
-    while(1) {
-        continue;
-    }
-    
-    /* disconnect from server */
-    mysql_close (conn);
-    
-    exit(EXIT_SUCCESS);
+	bool ret = true;
+
+	check_env_failing("HOST");
+	check_env_failing("DB");
+	check_env_failing("LOGIN_USER");
+	check_env_failing("LOGIN_PASS");
+	check_env_failing("MEDICAL_USER");
+	check_env_failing("MEDICAL_PASS");
+	check_env_failing("ADMIN_USER");
+	check_env_failing("ADMIN_PASS");
+
+	return ret;
+}
+#undef set_env_failing
+
+int main()
+{
+	if(env_load(".", false) != 0)
+		return 1;
+	if(!validate_dotenv())
+		return 1;
+	if(!init_validation())
+		return 1;
+	if(!init_db())
+		return 1;
+
+	if(initialize_io()) {
+		do {
+			if(!login())
+				fprintf(stderr, "Login unsuccessful\n");
+			db_switch_to_login();
+		} while(ask_for_relogin());
+	}
+	fini_db();
+	fini_validation();
+
+	puts("Bye!");
+	return 0;
 }
