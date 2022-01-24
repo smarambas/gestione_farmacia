@@ -13,15 +13,15 @@ static MYSQL_STMT *login_procedure;
 
 //ammin/medical procedures
 static MYSQL_STMT *add_product_description;
-static MYSQL_STMT *print_shelves;
+static MYSQL_STMT *get_shelves;
 static MYSQL_STMT *remove_box;
 static MYSQL_STMT *update_stock;
 
 //medical procedures
-static MYSQL_STMT *print_product_info;
+static MYSQL_STMT *get_product_info;
 static MYSQL_STMT *add_category;
 static MYSQL_STMT *add_interaction;
-static MYSQL_STMT *print_interacting_categories;
+static MYSQL_STMT *get_interacting_categories;
 static MYSQL_STMT *record_sale;
 static MYSQL_STMT *add_product_to_sale;
 
@@ -32,8 +32,8 @@ static MYSQL_STMT *do_stock_report;
 static MYSQL_STMT *remove_product;
 static MYSQL_STMT *add_supplier;
 static MYSQL_STMT *remove_supplier;
-static MYSQL_STMT *print_info_supplier;
-static MYSQL_STMT *print_supplier_products;
+static MYSQL_STMT *get_info_supplier;
+static MYSQL_STMT *get_supplier_products;
 static MYSQL_STMT *add_address;
 static MYSQL_STMT *remove_address;
 static MYSQL_STMT *add_contact;
@@ -44,10 +44,10 @@ static MYSQL_STMT *add_shelf;
 static MYSQL_STMT *update_shelf_category;
 static MYSQL_STMT *do_purchase_letter;
 static MYSQL_STMT *add_product_to_letter;
-static MYSQL_STMT *print_letters_to_supplier;
-static MYSQL_STMT *print_sales_on_date;
-static MYSQL_STMT *print_product_sales;
-static MYSQL_STMT *print_most_sold;
+static MYSQL_STMT *get_letters_to_supplier;
+static MYSQL_STMT *get_sales_on_date;
+static MYSQL_STMT *get_product_sales;
+static MYSQL_STMT *get_most_sold;
 
 
 static void close_prepared_stmts(void)
@@ -60,9 +60,9 @@ static void close_prepared_stmts(void)
 		mysql_stmt_close(add_product_description);
 		add_product_description = NULL;
 	}
-	if(print_shelves) {
-		mysql_stmt_close(print_shelves);
-		print_shelves = NULL;
+	if(get_shelves) {
+		mysql_stmt_close(get_shelves);
+		get_shelves = NULL;
 	}
 	if(remove_box) {
 		mysql_stmt_close(remove_box);
@@ -72,9 +72,9 @@ static void close_prepared_stmts(void)
 		mysql_stmt_close(update_stock);
 		update_stock = NULL;
 	}
-	if(print_product_info) {
-		mysql_stmt_close(print_product_info);
-		print_product_info = NULL;
+	if(get_product_info) {
+		mysql_stmt_close(get_product_info);
+		get_product_info = NULL;
 	}
 	if(add_category) {
 		mysql_stmt_close(add_category);
@@ -84,9 +84,9 @@ static void close_prepared_stmts(void)
 		mysql_stmt_close(add_interaction);
 		add_interaction = NULL;
 	}
-	if(print_interacting_categories) {
-		mysql_stmt_close(print_interacting_categories);
-		print_interacting_categories = NULL;
+	if(get_interacting_categories) {
+		mysql_stmt_close(get_interacting_categories);
+		get_interacting_categories = NULL;
 	}
 	if(record_sale) {
 		mysql_stmt_close(record_sale);
@@ -120,13 +120,13 @@ static void close_prepared_stmts(void)
 		mysql_stmt_close(remove_supplier);
 		remove_supplier = NULL;
 	}
-	if(print_info_supplier) {
-		mysql_stmt_close(print_info_supplier);
-		print_info_supplier = NULL;
+	if(get_info_supplier) {
+		mysql_stmt_close(get_info_supplier);
+		get_info_supplier = NULL;
 	}
-	if(print_supplier_products) {
-		mysql_stmt_close(print_supplier_products);
-		print_supplier_products = NULL;
+	if(get_supplier_products) {
+		mysql_stmt_close(get_supplier_products);
+		get_supplier_products = NULL;
 	}
 	if(add_address) {
 		mysql_stmt_close(add_address);
@@ -168,23 +168,24 @@ static void close_prepared_stmts(void)
 		mysql_stmt_close(add_product_to_letter);
 		add_product_to_letter = NULL;
 	}
-	if(print_letters_to_supplier) {
-		mysql_stmt_close(print_letters_to_supplier);
-		print_letters_to_supplier = NULL;
+	if(get_letters_to_supplier) {
+		mysql_stmt_close(get_letters_to_supplier);
+		get_letters_to_supplier = NULL;
 	}
-	if(print_sales_on_date) {
-		mysql_stmt_close(print_sales_on_date);
-		print_sales_on_date = NULL;
+	if(get_sales_on_date) {
+		mysql_stmt_close(get_sales_on_date);
+		get_sales_on_date = NULL;
 	}
-	if(print_product_sales) {
-		mysql_stmt_close(print_product_sales);
-		print_product_sales = NULL;
+	if(get_product_sales) {
+		mysql_stmt_close(get_product_sales);
+		get_product_sales = NULL;
 	}
-	if(print_most_sold) {
-		mysql_stmt_close(print_most_sold);
-		print_most_sold = NULL;
+	if(get_most_sold) {
+		mysql_stmt_close(get_most_sold);
+		get_most_sold = NULL;
 	}
 }
+
 
 static bool initialize_prepared_stmts(role_t for_role)
 {
@@ -221,12 +222,12 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(remove_supplier, "Unable to initialize remove supplier statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&print_info_supplier, "call info_fornitore(?)", conn)) {
-				print_stmt_error(print_info_supplier, "Unable to initialize print info supplier statement\n");
+			if(!setup_prepared_stmt(&get_info_supplier, "call info_fornitore(?)", conn)) {
+				print_stmt_error(get_info_supplier, "Unable to initialize get info supplier statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&print_supplier_products, "call lista_prodotti_fornitore(?)", conn)) {
-				print_stmt_error(print_supplier_products, "Unable to initialize print supplier products statement\n");
+			if(!setup_prepared_stmt(&get_supplier_products, "call lista_prodotti_fornitore(?)", conn)) {
+				print_stmt_error(get_supplier_products, "Unable to initialize get supplier products statement\n");
 				return false;
 			}
 			if(!setup_prepared_stmt(&add_address, "call aggiungi_indirizzo(?, ?, ?, ?, ?)", conn)) {
@@ -269,28 +270,28 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(add_product_to_letter, "Unable to initialize add product to letter statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&print_letters_to_supplier, "call lista_lettere_inviate(?)", conn)) {
-				print_stmt_error(print_letters_to_supplier, "Unable to initialize print letters to supplier statement\n");
+			if(!setup_prepared_stmt(&get_letters_to_supplier, "call lista_lettere_inviate(?)", conn)) {
+				print_stmt_error(get_letters_to_supplier, "Unable to initialize get letters to supplier statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&print_sales_on_date, "call lista_vendite_data(?)", conn)) {
-				print_stmt_error(print_sales_on_date, "Unable to initialize print sales on date statement\n");
+			if(!setup_prepared_stmt(&get_sales_on_date, "call lista_vendite_data(?)", conn)) {
+				print_stmt_error(get_sales_on_date, "Unable to initialize get sales on date statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&print_product_sales, "call vendite_prodotto(?, ?)", conn)) {
-				print_stmt_error(print_product_sales, "Unable to initialize print product sales statement\n");
+			if(!setup_prepared_stmt(&get_product_sales, "call vendite_prodotto(?, ?)", conn)) {
+				print_stmt_error(get_product_sales, "Unable to initialize get product sales statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&print_most_sold, "call lista_prodotti_top()", conn)) {
-				print_stmt_error(print_most_sold, "Unable to initialize print most sold statement\n");
+			if(!setup_prepared_stmt(&get_most_sold, "call lista_prodotti_top()", conn)) {
+				print_stmt_error(get_most_sold, "Unable to initialize get most sold statement\n");
 				return false;
 			}
 			if(!setup_prepared_stmt(&add_product_description, "call aggiungi_uso(?, ?, ?)", conn)) {
 				print_stmt_error(add_product_description, "Unable to initialize add product description statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&print_shelves, "call lista_scaffali()", conn)) {
-				print_stmt_error(print_shelves, "Unable to initialize print shelves statement\n");
+			if(!setup_prepared_stmt(&get_shelves, "call lista_scaffali()", conn)) {
+				print_stmt_error(get_shelves, "Unable to initialize get shelves statement\n");
 				return false;
 			}
 			if(!setup_prepared_stmt(&remove_box, "call rimuovi_scatola(?)", conn)) {
@@ -301,11 +302,10 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(update_stock, "Unable to initialize update stock statement\n");
 				return false;
 			}
-			
 			break;
 		case MEDICO:
-			if(!setup_prepared_stmt(&print_product_info, "call info_prodotto(?, ?)", conn)) {
-				print_stmt_error(print_product_info, "Unable to initialize print product info statement\n");
+			if(!setup_prepared_stmt(&get_product_info, "call info_prodotto(?, ?)", conn)) {
+				print_stmt_error(get_product_info, "Unable to initialize get product info statement\n");
 				return false;
 			}
 			if(!setup_prepared_stmt(&add_category, "call aggiungi_categoria(?)", conn)) {
@@ -316,8 +316,8 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(add_interaction, "Unable to initialize add interaction statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&print_interacting_categories, "call lista_cat_interagenti(?, ?)", conn)) {
-				print_stmt_error(print_interacting_categories, "Unable to initialize print interacting categories statement\n");
+			if(!setup_prepared_stmt(&get_interacting_categories, "call lista_cat_interagenti(?, ?)", conn)) {
+				print_stmt_error(get_interacting_categories, "Unable to initialize get interacting categories statement\n");
 				return false;
 			}
 			if(!setup_prepared_stmt(&record_sale, "call registra_vendita()", conn)) {
@@ -332,8 +332,8 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(add_product_description, "Unable to initialize add product description statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&print_shelves, "call lista_scaffali()", conn)) {
-				print_stmt_error(print_shelves, "Unable to initialize print shelves statement\n");
+			if(!setup_prepared_stmt(&get_shelves, "call lista_scaffali()", conn)) {
+				print_stmt_error(get_shelves, "Unable to initialize get shelves statement\n");
 				return false;
 			}
 			if(!setup_prepared_stmt(&remove_box, "call rimuovi_scatola(?)", conn)) {
@@ -344,7 +344,6 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(update_stock, "Unable to initialize update stock statement\n");
 				return false;
 			}
-			
 			break;
 		default:
 			fprintf(stderr, "[FATAL] Unexpected role to prepare statements.\n");
@@ -353,6 +352,7 @@ static bool initialize_prepared_stmts(role_t for_role)
 
 	return true;
 }
+
 
 bool init_db(void)
 {
@@ -392,6 +392,48 @@ void fini_db(void)
 	close_prepared_stmts();
 
 	mysql_close(conn);
+}
+
+
+void db_switch_to_login(void)
+{
+	close_prepared_stmts();
+	if(mysql_change_user(conn, getenv("LOGIN_USER"), getenv("LOGIN_PASS"), getenv("DB"))) {
+		fprintf(stderr, "mysql_change_user() failed: %s\n", mysql_error(conn));
+		exit(EXIT_FAILURE);
+	}
+	if(!initialize_prepared_stmts(LOGIN_ROLE)) {
+		fprintf(stderr, "[FATAL] Cannot initialize prepared statements.\n");
+		exit(EXIT_FAILURE);
+	}
+}
+
+
+void db_switch_to_administrator(void)
+{
+	close_prepared_stmts();
+	if(mysql_change_user(conn, getenv("ADMIN_USER"), getenv("ADMIN_PASS"), getenv("DB"))) {
+		fprintf(stderr, "mysql_change_user() failed: %s\n", mysql_error(conn));
+		exit(EXIT_FAILURE);
+	}
+	if(!initialize_prepared_stmts(AMMIN)) {
+		fprintf(stderr, "[FATAL] Cannot initialize prepared statements.\n");
+		exit(EXIT_FAILURE);
+	}
+}
+
+
+void db_switch_to_medical(void)
+{
+	close_prepared_stmts();
+	if(mysql_change_user(conn, getenv("MEDICAL_USER"), getenv("MEDICAL_PASS"), getenv("DB"))) {
+		fprintf(stderr, "mysql_change_user() failed: %s\n", mysql_error(conn));
+		exit(EXIT_FAILURE);
+	}
+	if(!initialize_prepared_stmts(MEDICO)) {
+		fprintf(stderr, "[FATAL] Cannot initialize prepared statements.\n");
+		exit(EXIT_FAILURE);
+	}
 }
 
 
@@ -443,45 +485,254 @@ role_t attempt_login(struct credentials *cred)
 	return role;
 }
 
-
-void db_switch_to_login(void)
+void do_add_product_description(struct prodotto *prodotto, struct descrizione *descrizione) 
 {
-	close_prepared_stmts();
-	if(mysql_change_user(conn, getenv("LOGIN_USER"), getenv("LOGIN_PASS"), getenv("DB"))) {
-		fprintf(stderr, "mysql_change_user() failed: %s\n", mysql_error(conn));
-		exit(EXIT_FAILURE);
+	MYSQL_BIND param[3];
+
+	// Bind parameters
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prodotto->nome, strlen(prodotto->nome));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodotto->nome_fornitore, strlen(prodotto->nome_fornitore));
+	set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, descrizione->text, strlen(descrizione->text));	
+
+	if(mysql_stmt_bind_param(add_product_description, param) != 0) {
+		print_stmt_error(add_product_description, "Could not bind parameters for do_add_product_description");
+		return;
 	}
-	if(!initialize_prepared_stmts(LOGIN_ROLE)) {
-		fprintf(stderr, "[FATAL] Cannot initialize prepared statements.\n");
-		exit(EXIT_FAILURE);
+
+	// Run procedure
+	if(mysql_stmt_execute(add_product_description) != 0) {
+		print_stmt_error(add_product_description, "Could not execute add product description procedure");
+		return;
 	}
+
+	mysql_stmt_free_result(add_product_description);
+	mysql_stmt_reset(add_product_description);
+}
+
+struct scaffale *do_get_shelves(void)
+{
+	int status;
+	size_t row = 0;
+	MYSQL_BIND param[2];
+	int codice;
+	char categoria[STR_LEN];
+	
+	struct magazzino *magazzino = NULL;
+	
+	// Run procedure
+	if(mysql_stmt_execute(get_shelves) != 0) {
+		print_stmt_error(get_shelves, "Could not execute get shelves procedure");
+		goto out;
+	}
+	
+	mysql_stmt_store_result(get_shelves);
+	
+	magazzino = malloc(sizeof(*magazzino) + sizeof(struct scaffale) * mysql_stmt_num_rows(get_shelves));
+	if(magazzino == NULL)
+		goto out;
+	memset(magazzino, 0, sizeof(*magazzino) + sizeof(struct scaffale) * mysql_stmt_num_rows(get_shelves));
+	magazzino->num_scaffali = mysql_stmt_num_rows(get_shelves);
+	
+	// Get bound parameters
+	mysql_stmt_store_result(get_shelves);
+	
+	set_binding_param(&param[0], MYSQL_TYPE_LONG, &codice, sizeof(codice));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, categoria, STR_LEN);
+	
+	if(mysql_stmt_bind_result(get_shelves, param)) {
+		print_stmt_error(get_shelves, "Unable to bind output parameters for get shelves\n");
+		free(magazzino);
+		magazzino = NULL;
+		goto out;
+	}
+	
+	while (true) {
+		status = mysql_stmt_fetch(get_shelves);
+
+		if (status == 1 || status == MYSQL_NO_DATA)
+			break;
+
+		strcpy(magazzino->magazzino[row].codice, codice);
+		strcpy(magazzino->magazzino[row].categoria, categoria);
+		
+		row++;
+	}
+	
+    out:
+	mysql_stmt_free_result(get_shelves);
+	mysql_stmt_reset(get_shelves);
+	return magazzino;
+}
+
+void magazzino_dispose(struct magazzino *magazzino)
+{
+	free(magazzino);
+}
+
+void do_remove_box(struct scatola *box)
+{
+	MYSQL_BIND param[1];
+
+	// Bind parameters
+	set_binding_param(&param[0], MYSQL_TYPE_LONG, scatola->codice, strlen(scatola->codice));
+
+	if(mysql_stmt_bind_param(remove_box, param) != 0) {
+		print_stmt_error(remove_box, "Could not bind parameters for remove_box");
+		return;
+	}
+
+	// Run procedure
+	if(mysql_stmt_execute(remove_box) != 0) {
+		print_stmt_error(remove_box, "Could not execute remove box procedure");
+		return;
+	}
+
+	mysql_stmt_free_result(remove_box);
+	mysql_stmt_reset(remove_box);
+}
+
+void do_update_stock(struct prodotto *prodotto) 
+{
+	MYSQL_BIND param[3];
+
+	// Bind parameters
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prodotto->nome, strlen(prodotto->nome));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodotto->nome_fornitore, strlen(prodotto->nome_fornitore));
+	set_binding_param(&param[2], MYSQL_TYPE_LONG, prodotto->quantita, strlen(prodotto->quantita));
+
+	if(mysql_stmt_bind_param(update_stock, param) != 0) {
+		print_stmt_error(update_stock, "Could not bind parameters for update_stock");
+		return;
+	}
+
+	// Run procedure
+	if(mysql_stmt_execute(update_stock) != 0) {
+		print_stmt_error(update_stock, "Could not execute update stock procedure");
+		return;
+	}
+
+	mysql_stmt_free_result(update_stock);
+	mysql_stmt_reset(update_stock);
+}
+
+struct prodotto *do_get_product_info(struct prodotto *prod)
+{
+	int status, cont = 0;
+	size_t row = 0;
+	MYSQL_BIND param[8];
+	
+	char nome[STR_LEN];
+	char nome_fornitore[STR_LEN];
+	char tipo;
+	int quantita;
+	char categoria[STR_LEN];
+	bool ricetta;
+	bool mutuabile;
+	char descrizione[TXT_LEN];
+	
+	struct prodotto *prodotto = NULL;
+
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prod->nome, strlen(prod->nome));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prod->nome_fornitore, strlen(prod->nome_fornitore));
+	
+	if(mysql_stmt_bind_param(get_product_info, param)) {
+		print_stmt_error(get_product_info, "Could not bind input parameters");
+		goto out;
+	}
+
+	// Run procedure
+	if(mysql_stmt_execute(get_product_info) != 0) {
+		print_stmt_error(get_product_info, "Could not execute get product info procedure");
+		goto out;
+	}
+	
+	mysql_stmt_store_result(get_product_info);
+	
+	prodotto = malloc(sizeof(*prodotto));
+	if(prodotto == NULL)
+		goto out;
+	memset(prodotto, 0, sizeof(*prodotto));
+	prodotto->num_usi = mysql_stmt_num_rows(get_product_info);	
+	
+	prodotto->usi = malloc(sizeof(struct descrizione) * mysql_stmt_num_rows(get_product_info));
+	if(prodotto->usi == NULL)
+		goto out;
+	memset(prodotto->usi, 0, sizeof(struct descrizione) * mysql_stmt_num_rows(get_product_info));
+
+	// Prepare output parameters
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome, STR_LEN);
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, nome_fornitore, STR_LEN);
+	set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, &tipo, sizeof(tipo));
+	set_binding_param(&param[3], MYSQL_TYPE_LONG, &quantita, sizeof(quantita));
+	set_binding_param(&param[4], MYSQL_TYPE_VAR_STRING, categoria, STR_LEN);
+	set_binding_param(&param[5], MYSQL_TYPE_TINY, &ricetta, sizeof(ricetta));
+	set_binding_param(&param[6], MYSQL_TYPE_TINY, &mutuabile, sizeof(mutuabile));
+	set_binding_param(&param[7], MYSQL_TYPE_VAR_STRING, descrizione, TXT_LEN);
+	
+	if(mysql_stmt_bind_result(get_product_info, param)) {
+		print_stmt_error(get_product_info, "Unable to bind output parameters for get product info\n");
+		free(prodotto);
+		prodotto = NULL;
+		goto out;
+	}
+	
+	while (true) {
+		status = mysql_stmt_fetch(get_product_info);
+
+		if (status == 1 || status == MYSQL_NO_DATA)
+			break;
+
+		if(cont == 0) {
+			strcpy(prodotto->prodotto[row].nome, nome);
+			strcpy(prodotto->prodotto[row].nome_fornitore, nome_fornitore);
+			strcpy(prodotto->prodotto[row].tipo, tipo);
+			prodotto->prodotto[row].quantita = quantita;
+			strcpy(prodotto->prodotto[row].categoria, categoria);
+			prodotto->prodotto[row].ricetta = ricetta;
+			prodotto->prodotto[row].mutuabile = mutuabile;
+		}
+		strcpy(prodotto->prodotto[row].usi[cont], descrizione);
+		
+		cont++;
+		row++;
+	}
+	
+    out:
+	mysql_stmt_free_result(get_product_info);
+	mysql_stmt_reset(get_product_info);
+	return prodotto;
 }
 
 
-void db_switch_to_administrator(void)
-{
-	close_prepared_stmts();
-	if(mysql_change_user(conn, getenv("ADMIN_USER"), getenv("ADMIN_PASS"), getenv("DB"))) {
-		fprintf(stderr, "mysql_change_user() failed: %s\n", mysql_error(conn));
-		exit(EXIT_FAILURE);
-	}
-	if(!initialize_prepared_stmts(AMMIN)) {
-		fprintf(stderr, "[FATAL] Cannot initialize prepared statements.\n");
-		exit(EXIT_FAILURE);
-	}
-}
 
 
-void db_switch_to_medical(void)
-{
-	close_prepared_stmts();
-	if(mysql_change_user(conn, getenv("MEDICAL_USER"), getenv("MEDICAL_PASS"), getenv("DB"))) {
-		fprintf(stderr, "mysql_change_user() failed: %s\n", mysql_error(conn));
-		exit(EXIT_FAILURE);
-	}
-	if(!initialize_prepared_stmts(MEDICO)) {
-		fprintf(stderr, "[FATAL] Cannot initialize prepared statements.\n");
-		exit(EXIT_FAILURE);
-	}
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

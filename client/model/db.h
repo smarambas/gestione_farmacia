@@ -36,7 +36,7 @@ struct prodotto {
 	int quantita;
 	char categoria[STR_LEN];
 	unsigned num_usi;
-	struct descrizione usi[];
+	struct descrizione *usi;
 	bool ricetta;
 	bool mutuabile;
 }
@@ -99,6 +99,11 @@ struct scaffale {
 	char categoria[STR_LEN];
 }
 
+struct magazzino {
+	unsigned num_scaffali;
+	struct scaffale scaffali[];
+}
+
 struct prodotto_venduto {
 	char nome_prodotto[STR_LEN];
 	char nome_fornitore[STR_LEN];
@@ -116,15 +121,20 @@ struct vendita {
 }
 
 
-
 extern bool init_db(void);
 extern void fini_db(void);
 
 extern void db_switch_to_login(void);
-extern role_t attempt_login(struct credentials *cred);
-
 extern void db_switch_to_administrator(void);
 extern void db_switch_to_medical(void);
 
+extern role_t attempt_login(struct credentials *cred);
 
+extern void do_add_product_description(struct prodotto *prodotto, struct descrizione *descrizione);
+extern struct scaffale * do_get_shelves(void);
+extern void magazzino_dispose(struct magazzino *magazzino);
+extern void do_remove_box(struct scatola *box);
+extern void do_update_stock(struct prodotto *prodotto) 
+
+extern struct prodotto *do_get_product_info(struct prodotto *prod);
 
