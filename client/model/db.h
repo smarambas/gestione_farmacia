@@ -2,9 +2,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-extern bool init_db(void);
-extern void fini_db(void);
-
 #define DATE_LEN 11
 #define TIME_LEN 6
 #define DATETIME_LEN (DATE_LEN + TIME_LEN)
@@ -12,10 +9,8 @@ extern void fini_db(void);
 #define USERNAME_LEN 45
 #define PASSWORD_LEN 45
 
-struct credentials {
-	char username[USERNAME_LEN];
-	char password[PASSWORD_LEN];
-};
+#define STR_LEN 45
+#define TXT_LEN 256
 
 typedef enum {
 	LOGIN_ROLE,
@@ -24,75 +19,112 @@ typedef enum {
 	FAILED_LOGIN
 } role_t;
 
+struct credentials {
+	char username[USERNAME_LEN];
+	char password[PASSWORD_LEN];
+};
+
+struct descrizione {
+	int codice;
+	char text[TXT_LEN];
+}
+
+struct prodotto {
+	char nome[STR_LEN];
+	char nome_fornitore[STR_LEN];
+	char tipo;
+	int quantita;
+	char categoria[STR_LEN];
+	unsigned num_usi;
+	struct descrizione usi[];
+	bool ricetta;
+	bool mutuabile;
+}
+
+struct recapito {
+	char contatto[STR_LEN];
+	bool preferito;
+}
+
+struct indirizzo {
+	char citta[STR_LEN];
+	char via[STR_LEN];
+	char num_civico[STR_LEN];
+	bool fatturazione;
+}
+
+struct fornitore {
+	char nome[STR_LEN];
+	unsigned num_recapiti;
+	struct recapito recapiti[];
+	unsigned num_indirizzi;
+	struct indirizzo indirizzi[];
+}
+
+struct prodotto_richiesto {
+	char nome_prodotto[STR_LEN];
+	char nome_fornitore[STR_LEN];
+	int quantita;
+}
+
+struct lettera_acquisto {
+	int codice;
+	char giorno[DATE_LEN];
+	unsigned num_richieste;
+	struct prodotto_richiesto richieste[];
+}
+
+struct interazioni {
+	char nome_categoria[STR_LEN];
+	unsigned num_interazioni;
+	char cat_interagenti[][STR_LEN];
+}
+
+struct scatola {
+	int codice;
+	char scadenza[DATE_LEN];
+	int cassetto;
+	struct scaffale scaff;
+}
+
+struct scatole_prodotto {
+	char nome_prodotto[STR_LEN];
+	char nome_fornitore[STR_LEN];
+	unsigned num_scatole;
+	struct scatola scatole[];
+}
+
+struct scaffale {
+	int codice;
+	char categoria[STR_LEN];
+}
+
+struct prodotto_venduto {
+	char nome_prodotto[STR_LEN];
+	char nome_fornitore[STR_LEN];
+	char tipo;
+	int quantita;
+	char medico[STR_LEN];
+	char cf[STR_LEN];
+}
+
+struct vendita {
+	int scontrino;
+	char giorno[DATE_LEN];
+	unsigned num_prodotti;
+	struct prodotto_venduto prod_venduti[];
+}
+
+
+
+extern bool init_db(void);
+extern void fini_db(void);
+
 extern void db_switch_to_login(void);
 extern role_t attempt_login(struct credentials *cred);
+
 extern void db_switch_to_administrator(void);
-
-#define ID_LEN 45
-#define CITTA_LEN 45
-#define TIPO_LEN 45
-struct flight {
-	char idVolo[ID_LEN];
-	char giorno[DATE_LEN];
-	char cittaPart[CITTA_LEN];
-	char oraPart[TIME_LEN];
-	char cittaArr[CITTA_LEN];
-	char oraArr[TIME_LEN];
-	char tipoAereo[TIPO_LEN];
-};
-
-extern void do_register_flight(struct flight *flight);
+extern void db_switch_to_medical(void);
 
 
-struct occupancy_entry {
-	char idVolo[ID_LEN];
-	char cittaPart[CITTA_LEN];
-	char partenza[DATETIME_LEN];
-	char cittaArr[CITTA_LEN];
-	char arrivo[DATETIME_LEN];
-	unsigned prenotati;
-	unsigned disponibili;
-	double occupazione;
-};
-struct occupancy {
-	unsigned num_entries;
-	struct occupancy_entry occupancy[];
-};
 
-extern struct occupancy *do_get_occupancy(void);
-extern void occupancy_dispose(struct occupancy *occupancy);
-
-
-extern void db_switch_to_agency(void);
-
-#define NAME_SURNAME_LEN 45
-struct booking {
-	char idVolo[ID_LEN];
-	char giorno[DATE_LEN];
-	char name[NAME_SURNAME_LEN];
-	char surname[NAME_SURNAME_LEN];
-};
-
-extern int do_booking(struct booking *info);
-
-struct booking_info {
-	char name[NAME_SURNAME_LEN];
-	char surname[NAME_SURNAME_LEN];
-};
-
-struct flight_info {
-	char idVolo[ID_LEN];
-	char cittaPart[CITTA_LEN];
-	char cittaArr[CITTA_LEN];
-	char giorno[DATE_LEN];
-	size_t num_bookings;
-	struct booking_info *bookings;
-};
-
-struct booking_report {
-	size_t num_flights;
-	struct flight_info flights[];
-};
-
-extern struct booking_report *do_booking_report(void);
-extern void booking_report_dispose(struct booking_report *report);

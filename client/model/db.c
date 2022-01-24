@@ -10,10 +10,45 @@
 static MYSQL *conn;
 
 static MYSQL_STMT *login_procedure;
-static MYSQL_STMT *register_flight;
-static MYSQL_STMT *get_occupancy;
-static MYSQL_STMT *booking;
-static MYSQL_STMT *booking_report;
+
+//ammin/medical procedures
+static MYSQL_STMT *add_product_description;
+static MYSQL_STMT *print_shelves;
+static MYSQL_STMT *remove_box;
+static MYSQL_STMT *update_stock;
+
+//medical procedures
+static MYSQL_STMT *print_product_info;
+static MYSQL_STMT *add_category;
+static MYSQL_STMT *add_interaction;
+static MYSQL_STMT *print_interacting_categories;
+static MYSQL_STMT *record_sale;
+static MYSQL_STMT *add_product_to_sale;
+
+//ammin procedures
+static MYSQL_STMT *add_cosmetic;
+static MYSQL_STMT *add_medicine;
+static MYSQL_STMT *do_stock_report;
+static MYSQL_STMT *remove_product;
+static MYSQL_STMT *add_supplier;
+static MYSQL_STMT *remove_supplier;
+static MYSQL_STMT *print_info_supplier;
+static MYSQL_STMT *print_supplier_products;
+static MYSQL_STMT *add_address;
+static MYSQL_STMT *remove_address;
+static MYSQL_STMT *add_contact;
+static MYSQL_STMT *remove_contact;
+static MYSQL_STMT *add_box;
+static MYSQL_STMT *do_expiry_report;
+static MYSQL_STMT *add_shelf;
+static MYSQL_STMT *update_shelf_category;
+static MYSQL_STMT *do_purchase_letter;
+static MYSQL_STMT *add_product_to_letter;
+static MYSQL_STMT *print_letters_to_supplier;
+static MYSQL_STMT *print_sales_on_date;
+static MYSQL_STMT *print_product_sales;
+static MYSQL_STMT *print_most_sold;
+
 
 static void close_prepared_stmts(void)
 {
@@ -21,21 +56,133 @@ static void close_prepared_stmts(void)
 		mysql_stmt_close(login_procedure);
 		login_procedure = NULL;
 	}
-	if(register_flight) {
-		mysql_stmt_close(register_flight);
-		register_flight = NULL;
+	if(add_product_description) {
+		mysql_stmt_close(add_product_description);
+		add_product_description = NULL;
 	}
-	if(get_occupancy) {
-		mysql_stmt_close(get_occupancy);
-		get_occupancy = NULL;
+	if(print_shelves) {
+		mysql_stmt_close(print_shelves);
+		print_shelves = NULL;
 	}
-	if(booking) {
-		mysql_stmt_close(booking);
-		booking = NULL;
+	if(remove_box) {
+		mysql_stmt_close(remove_box);
+		remove_box = NULL;
 	}
-	if(booking_report) {
-		mysql_stmt_close(booking_report);
-		booking_report = NULL;
+	if(update_stock) {
+		mysql_stmt_close(update_stock);
+		update_stock = NULL;
+	}
+	if(print_product_info) {
+		mysql_stmt_close(print_product_info);
+		print_product_info = NULL;
+	}
+	if(add_category) {
+		mysql_stmt_close(add_category);
+		add_category = NULL;
+	}
+	if(add_interaction) {
+		mysql_stmt_close(add_interaction);
+		add_interaction = NULL;
+	}
+	if(print_interacting_categories) {
+		mysql_stmt_close(print_interacting_categories);
+		print_interacting_categories = NULL;
+	}
+	if(record_sale) {
+		mysql_stmt_close(record_sale);
+		record_sale = NULL;
+	}
+	if(add_product_to_sale) {
+		mysql_stmt_close(add_product_to_sale);
+		add_product_to_sale = NULL;
+	}
+	if(add_cosmetic) {
+		mysql_stmt_close(add_cosmetic);
+		add_cosmetic = NULL;
+	}
+	if(add_medicine) {
+		mysql_stmt_close(add_medicine);
+		add_medicine = NULL;
+	}
+	if(do_stock_report) {
+		mysql_stmt_close(do_stock_report);
+		do_stock_report = NULL;
+	}
+	if(remove_product) {
+		mysql_stmt_close(remove_product);
+		remove_product = NULL;
+	}
+	if(add_supplier) {
+		mysql_stmt_close(add_supplier);
+		add_supplier = NULL;
+	}
+	if(remove_supplier) {
+		mysql_stmt_close(remove_supplier);
+		remove_supplier = NULL;
+	}
+	if(print_info_supplier) {
+		mysql_stmt_close(print_info_supplier);
+		print_info_supplier = NULL;
+	}
+	if(print_supplier_products) {
+		mysql_stmt_close(print_supplier_products);
+		print_supplier_products = NULL;
+	}
+	if(add_address) {
+		mysql_stmt_close(add_address);
+		add_address = NULL;
+	}
+	if(remove_address) {
+		mysql_stmt_close(remove_address);
+		remove_address = NULL;
+	}
+	if(add_contact) {
+		mysql_stmt_close(add_contact);
+		add_contact = NULL;
+	}
+	if(remove_contact) {
+		mysql_stmt_close(remove_contact);
+		remove_contact = NULL;
+	}
+	if(add_box) {
+		mysql_stmt_close(add_box);
+		add_box = NULL;
+	}
+	if(do_expiry_report) {
+		mysql_stmt_close(do_expiry_report);
+		do_expiry_report = NULL;
+	}
+	if(add_shelf) {
+		mysql_stmt_close(add_shelf);
+		add_shelf = NULL;
+	}
+	if(update_shelf_category) {
+		mysql_stmt_close(update_shelf_category);
+		update_shelf_category = NULL;
+	}
+	if(do_purchase_letter) {
+		mysql_stmt_close(do_purchase_letter);
+		do_purchase_letter = NULL;
+	}
+	if(add_product_to_letter) {
+		mysql_stmt_close(add_product_to_letter);
+		add_product_to_letter = NULL;
+	}
+	if(print_letters_to_supplier) {
+		mysql_stmt_close(print_letters_to_supplier);
+		print_letters_to_supplier = NULL;
+	}
+	if(print_sales_on_date) {
+		mysql_stmt_close(print_sales_on_date);
+		print_sales_on_date = NULL;
+	}
+	if(print_product_sales) {
+		mysql_stmt_close(print_product_sales);
+		print_product_sales = NULL;
+	}
+	if(print_most_sold) {
+		mysql_stmt_close(print_most_sold);
+		print_most_sold = NULL;
 	}
 }
 
@@ -49,25 +196,155 @@ static bool initialize_prepared_stmts(role_t for_role)
 				return false;
 			}
 			break;
-		case AMMINISTRATORE:
-			if(!setup_prepared_stmt(&register_flight, "call registra_volo(?, ?, ?, ?, ?, ?, ?)", conn)) {
-				print_stmt_error(register_flight, "Unable to initialize register flight statement\n");
+		case AMMIN:
+			if(!setup_prepared_stmt(&add_cosmetic, "call aggiungi_cosmetico(?, ?)", conn)) {
+				print_stmt_error(add_cosmetic, "Unable to initialize add cosmetic statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&get_occupancy, "call report_occupazione_voli()", conn)) {
-				print_stmt_error(register_flight, "Unable to initialize get occupancy statement\n");
+			if(!setup_prepared_stmt(&add_medicine, "call aggiungi_medicinale(?, ?, ?, ?, ?)", conn)) {
+				print_stmt_error(add_medicine, "Unable to initialize add medicine statement\n");
 				return false;
 			}
+			if(!setup_prepared_stmt(&do_stock_report, "call genera_report_magazzino()", conn)) {
+				print_stmt_error(do_stock_report, "Unable to initialize do stock report statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&remove_product, "call rimuovi_prodotto(?, ?)", conn)) {
+				print_stmt_error(remove_product, "Unable to initialize remove product statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&add_supplier, "call aggiungi_fornitore(?)", conn)) {
+				print_stmt_error(add_supplier, "Unable to initialize add supplier statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&remove_supplier, "call rimuovi_fornitore(?)", conn)) {
+				print_stmt_error(remove_supplier, "Unable to initialize remove supplier statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&print_info_supplier, "call info_fornitore(?)", conn)) {
+				print_stmt_error(print_info_supplier, "Unable to initialize print info supplier statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&print_supplier_products, "call lista_prodotti_fornitore(?)", conn)) {
+				print_stmt_error(print_supplier_products, "Unable to initialize print supplier products statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&add_address, "call aggiungi_indirizzo(?, ?, ?, ?, ?)", conn)) {
+				print_stmt_error(add_address, "Unable to initialize add address statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&remove_address, "call rimuovi_indirizzo(?, ?, ?)", conn)) {
+				print_stmt_error(remove_address, "Unable to initialize remove address statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&add_contact, "call aggiungi_recapito(?, ?, ?)", conn)) {
+				print_stmt_error(add_contact, "Unable to initialize add contact statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&remove_contact, "call rimuovi_recapito(?)", conn)) {
+				print_stmt_error(remove_contact, "Unable to initialize remove contact statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&add_box, "call aggiungi_scatola(?, ?, ?, ?, ?)", conn)) {
+				print_stmt_error(add_box, "Unable to initialize add box statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&do_expiry_report, "call genera_report_scandenze()", conn)) {
+				print_stmt_error(do_expiry_report, "Unable to initialize do expiry report statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&add_shelf, "call aggiungi_scaffale(?)", conn)) {
+				print_stmt_error(add_shelf, "Unable to initialize add shelf statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&update_shelf_category, "call modifica_cat_scaffale(?, ?)", conn)) {
+				print_stmt_error(update_shelf_category, "Unable to initialize update shelf category statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&do_purchase_letter, "call genera_lettera_acquisto()", conn)) {
+				print_stmt_error(do_purchase_letter, "Unable to initialize do purchase letter statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&add_product_to_letter, "call aggiungi_richiesta_prodotto(?, ?, ?, ?)", conn)) {
+				print_stmt_error(add_product_to_letter, "Unable to initialize add product to letter statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&print_letters_to_supplier, "call lista_lettere_inviate(?)", conn)) {
+				print_stmt_error(print_letters_to_supplier, "Unable to initialize print letters to supplier statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&print_sales_on_date, "call lista_vendite_data(?)", conn)) {
+				print_stmt_error(print_sales_on_date, "Unable to initialize print sales on date statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&print_product_sales, "call vendite_prodotto(?, ?)", conn)) {
+				print_stmt_error(print_product_sales, "Unable to initialize print product sales statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&print_most_sold, "call lista_prodotti_top()", conn)) {
+				print_stmt_error(print_most_sold, "Unable to initialize print most sold statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&add_product_description, "call aggiungi_uso(?, ?, ?)", conn)) {
+				print_stmt_error(add_product_description, "Unable to initialize add product description statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&print_shelves, "call lista_scaffali()", conn)) {
+				print_stmt_error(print_shelves, "Unable to initialize print shelves statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&remove_box, "call rimuovi_scatola(?)", conn)) {
+				print_stmt_error(remove_box, "Unable to initialize remove box statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&update_stock, "call aggiorna_giacenza(?, ?, ?)", conn)) {
+				print_stmt_error(update_stock, "Unable to initialize update stock statement\n");
+				return false;
+			}
+			
 			break;
-		case AGENZIA:
-			if(!setup_prepared_stmt(&booking, "call registra_prenotazione(?, ?, ?, ?, ?)", conn)) {
-				print_stmt_error(booking, "Unable to initialize booking statement\n");
+		case MEDICO:
+			if(!setup_prepared_stmt(&print_product_info, "call info_prodotto(?, ?)", conn)) {
+				print_stmt_error(print_product_info, "Unable to initialize print product info statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&booking_report, "call report_prenotazioni()", conn)) {
-				print_stmt_error(booking_report, "Unable to initialize booking report statement\n");
+			if(!setup_prepared_stmt(&add_category, "call aggiungi_categoria(?)", conn)) {
+				print_stmt_error(add_category, "Unable to initialize add category statement\n");
 				return false;
 			}
+			if(!setup_prepared_stmt(&add_interaction, "call aggiungi_interazione(?, ?)", conn)) {
+				print_stmt_error(add_interaction, "Unable to initialize add interaction statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&print_interacting_categories, "call lista_cat_interagenti(?, ?)", conn)) {
+				print_stmt_error(print_interacting_categories, "Unable to initialize print interacting categories statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&record_sale, "call registra_vendita()", conn)) {
+				print_stmt_error(record_sale, "Unable to initialize record sale statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&add_product_to_sale, "call aggiungi_prodotto_venduto(?, ?, ?, ?, ?, ?)", conn)) {
+				print_stmt_error(add_product_to_sale, "Unable to initialize add product to sale statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&add_product_description, "call aggiungi_uso(?, ?, ?)", conn)) {
+				print_stmt_error(add_product_description, "Unable to initialize add product description statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&print_shelves, "call lista_scaffali()", conn)) {
+				print_stmt_error(print_shelves, "Unable to initialize print shelves statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&remove_box, "call rimuovi_scatola(?)", conn)) {
+				print_stmt_error(remove_box, "Unable to initialize remove box statement\n");
+				return false;
+			}
+			if(!setup_prepared_stmt(&update_stock, "call aggiorna_giacenza(?, ?, ?)", conn)) {
+				print_stmt_error(update_stock, "Unable to initialize update stock statement\n");
+				return false;
+			}
+			
 			break;
 		default:
 			fprintf(stderr, "[FATAL] Unexpected role to prepare statements.\n");
@@ -184,345 +461,27 @@ void db_switch_to_login(void)
 void db_switch_to_administrator(void)
 {
 	close_prepared_stmts();
-	if(mysql_change_user(conn, getenv("ADMINISTRATOR_USER"), getenv("ADMINISTRATOR_PASS"), getenv("DB"))) {
+	if(mysql_change_user(conn, getenv("ADMIN_USER"), getenv("ADMIN_PASS"), getenv("DB"))) {
 		fprintf(stderr, "mysql_change_user() failed: %s\n", mysql_error(conn));
 		exit(EXIT_FAILURE);
 	}
-	if(!initialize_prepared_stmts(AMMINISTRATORE)) {
+	if(!initialize_prepared_stmts(AMMIN)) {
 		fprintf(stderr, "[FATAL] Cannot initialize prepared statements.\n");
 		exit(EXIT_FAILURE);
 	}
 }
 
 
-void do_register_flight(struct flight *flight)
-{
-	MYSQL_BIND param[7];
-	MYSQL_TIME giorno;
-	MYSQL_TIME oraPart;
-	MYSQL_TIME oraArr;
-
-	// Make proper type conversion
-	date_to_mysql_time(flight->giorno, &giorno);
-	time_to_mysql_time(flight->oraPart, &oraPart);
-	time_to_mysql_time(flight->oraArr, &oraArr);
-
-	// Bind parameters
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, flight->idVolo, strlen(flight->idVolo));
-	set_binding_param(&param[1], MYSQL_TYPE_DATE, &giorno, sizeof(giorno));
-	set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, flight->cittaPart, strlen(flight->cittaPart));
-	set_binding_param(&param[3], MYSQL_TYPE_TIME, &oraPart, sizeof(oraPart));
-	set_binding_param(&param[4], MYSQL_TYPE_VAR_STRING, flight->cittaArr, strlen(flight->cittaArr));
-	set_binding_param(&param[5], MYSQL_TYPE_TIME, &oraArr, sizeof(oraArr));
-	set_binding_param(&param[6], MYSQL_TYPE_VAR_STRING, flight->tipoAereo, strlen(flight->tipoAereo));
-
-	if(mysql_stmt_bind_param(register_flight, param) != 0) {
-		print_stmt_error(register_flight, "Could not bind parameters for do_register_flight");
-		return;
-	}
-
-	// Run procedure
-	if(mysql_stmt_execute(register_flight) != 0) {
-		print_stmt_error(register_flight, "Could not execute register flight procedure");
-		return;
-	}
-
-	mysql_stmt_free_result(register_flight);
-	mysql_stmt_reset(register_flight);
-}
-
-
-struct occupancy *do_get_occupancy(void)
-{
-	int status;
-	size_t row = 0;
-	MYSQL_BIND param[8];
-	MYSQL_TIME partenza;
-	MYSQL_TIME arrivo;
-	char idVolo[ID_LEN];
-	char cittaPart[CITTA_LEN];
-	char cittaArr[CITTA_LEN];
-	int prenotati;
-	int disponibili;
-	double occupazione;
-	struct occupancy *occupancy = NULL;
-
-	// Initialize timestamps
-	init_mysql_timestamp(&partenza);
-	init_mysql_timestamp(&arrivo);
-
-	// Run procedure
-	if(mysql_stmt_execute(get_occupancy) != 0) {
-		print_stmt_error(get_occupancy, "Could not execute get occupancy procedure");
-		goto out;
-	}
-
-	mysql_stmt_store_result(get_occupancy);
-
-	occupancy = malloc(sizeof(*occupancy) + sizeof(struct occupancy_entry) * mysql_stmt_num_rows(get_occupancy));
-	if(occupancy == NULL)
-		goto out;
-	memset(occupancy, 0, sizeof(*occupancy) + sizeof(struct occupancy_entry) * mysql_stmt_num_rows(get_occupancy));
-	occupancy->num_entries = mysql_stmt_num_rows(get_occupancy);
-
-	// Get bound parameters
-	mysql_stmt_store_result(get_occupancy);
-
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, idVolo, ID_LEN);
-	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, cittaPart, CITTA_LEN);
-	set_binding_param(&param[2], MYSQL_TYPE_TIMESTAMP, &partenza, sizeof(partenza));
-	set_binding_param(&param[3], MYSQL_TYPE_VAR_STRING, cittaArr, CITTA_LEN);
-	set_binding_param(&param[4], MYSQL_TYPE_TIMESTAMP, &arrivo, sizeof(arrivo));
-	set_binding_param(&param[5], MYSQL_TYPE_LONG, &prenotati, sizeof(prenotati));
-	set_binding_param(&param[6], MYSQL_TYPE_LONG, &disponibili, sizeof(disponibili));
-	set_binding_param(&param[7], MYSQL_TYPE_DOUBLE, &occupazione, sizeof(occupazione));
-
-	if(mysql_stmt_bind_result(get_occupancy, param)) {
-		print_stmt_error(get_occupancy, "Unable to bind output parameters for get occupancy\n");
-		free(occupancy);
-		occupancy = NULL;
-		goto out;
-	}
-
-	/* assemble occupancy general information */
-	while (true) {
-		status = mysql_stmt_fetch(get_occupancy);
-
-		if (status == 1 || status == MYSQL_NO_DATA)
-			break;
-
-		strcpy(occupancy->occupancy[row].idVolo, idVolo);
-		strcpy(occupancy->occupancy[row].cittaPart, cittaPart);
-		strcpy(occupancy->occupancy[row].cittaArr, cittaArr);
-		mysql_timestamp_to_string(&partenza, occupancy->occupancy[row].partenza);
-		mysql_timestamp_to_string(&arrivo, occupancy->occupancy[row].arrivo);
-		occupancy->occupancy[row].prenotati = prenotati;
-		occupancy->occupancy[row].disponibili = disponibili;
-		occupancy->occupancy[row].occupazione = occupazione;
-
-		row++;
-	}
-    out:
-	mysql_stmt_free_result(get_occupancy);
-	mysql_stmt_reset(get_occupancy);
-	return occupancy;
-}
-
-
-void occupancy_dispose(struct occupancy *occupancy)
-{
-	free(occupancy);
-}
-
-
-void db_switch_to_agency(void)
+void db_switch_to_medical(void)
 {
 	close_prepared_stmts();
-	if(mysql_change_user(conn, getenv("AGENCY_USER"), getenv("AGENCY_PASS"), getenv("DB"))) {
+	if(mysql_change_user(conn, getenv("MEDICAL_USER"), getenv("MEDICAL_PASS"), getenv("DB"))) {
 		fprintf(stderr, "mysql_change_user() failed: %s\n", mysql_error(conn));
 		exit(EXIT_FAILURE);
 	}
-	if(!initialize_prepared_stmts(AGENZIA)) {
+	if(!initialize_prepared_stmts(MEDICO)) {
 		fprintf(stderr, "[FATAL] Cannot initialize prepared statements.\n");
 		exit(EXIT_FAILURE);
 	}
 }
 
-
-int do_booking(struct booking *info)
-{
-	MYSQL_BIND param[5];
-	MYSQL_TIME giorno;
-	int reservation;
-
-	date_to_mysql_time(info->giorno, &giorno);
-
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, info->idVolo, strlen(info->idVolo));
-	set_binding_param(&param[1], MYSQL_TYPE_DATE, &giorno, sizeof(giorno));
-	set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, info->name, strlen(info->name));
-	set_binding_param(&param[3], MYSQL_TYPE_VAR_STRING, info->surname, strlen(info->surname));
-	set_binding_param(&param[4], MYSQL_TYPE_LONG, &reservation, sizeof(reservation));
-
-	if(mysql_stmt_bind_param(booking, param)) {
-		print_stmt_error(booking, "Could not bind input parameters");
-		reservation = -1;
-		goto out;
-	}
-
-	// Run procedure
-	if(mysql_stmt_execute(booking) != 0) {
-		print_stmt_error(booking, "Could not execute get occupancy procedure");
-		reservation = -1;
-		goto out;
-	}
-
-	// Prepare output parameters
-	set_binding_param(&param[0], MYSQL_TYPE_LONG, &reservation, sizeof(reservation));
-
-	if(mysql_stmt_bind_result(booking, param)) {
-		print_stmt_error(booking, "Could not retrieve output parameter");
-		reservation = -1;
-		goto out;
-	}
-
-	// Retrieve output parameter
-	if(mysql_stmt_fetch(booking)) {
-		print_stmt_error(booking, "Could not buffer results");
-		reservation = -1;
-		goto out;
-	}
-
-    out:
-	// Consume the possibly-returned table for the output parameter
-	while(mysql_stmt_next_result(booking) != -1) {}
-
-	mysql_stmt_free_result(booking);
-	mysql_stmt_reset(booking);
-	return reservation;
-}
-
-static struct booking_report *extract_flight_information(void)
-{
-	struct booking_report *report = NULL;
-	int status;
-	size_t row = 0;
-	MYSQL_BIND param[4];
-	char idVolo[ID_LEN];
-	char cittaPart[CITTA_LEN];
-	char cittaArr[CITTA_LEN];
-	MYSQL_TIME giorno;
-
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, idVolo, ID_LEN);
-	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, cittaPart, CITTA_LEN);
-	set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, cittaArr, CITTA_LEN);
-	set_binding_param(&param[3], MYSQL_TYPE_DATE, &giorno, sizeof(giorno));
-
-	if(mysql_stmt_bind_result(booking_report, param)) {
-		print_stmt_error(booking_report, "Unable to bind column parameters\n");
-		free(report);
-		report = NULL;
-		goto out;
-	}
-
-	// store_results should be called *after* binding and *before* fetching rows.
-	if (mysql_stmt_store_result(booking_report)) {
-		print_stmt_error(booking_report, "Unable to store booking information result set.");
-		goto out;
-	}
-
-	report = malloc(sizeof(*report) + sizeof(struct flight_info) * mysql_stmt_num_rows(booking_report));
-	if(report == NULL)
-		goto out;
-	memset(report, 0, sizeof(*report) + sizeof(struct flight_info) * mysql_stmt_num_rows(booking_report));
-	report->num_flights = mysql_stmt_num_rows(booking_report);
-
-	/* assemble flight general information */
-	while (true) {
-		status = mysql_stmt_fetch(booking_report);
-
-		if (status == 1 || status == MYSQL_NO_DATA)
-			break;
-
-		strcpy(report->flights[row].idVolo, idVolo);
-		strcpy(report->flights[row].cittaPart, cittaPart);
-		strcpy(report->flights[row].cittaArr, cittaArr);
-		mysql_date_to_string(&giorno, report->flights[row].giorno);
-
-		row++;
-	}
-    out:
-	return report;
-}
-
-
-static void extract_booking_information(struct booking_report *report, size_t i)
-{
-	MYSQL_BIND param[4];
-	size_t row = 0;
-	int status;
-	char name[NAME_SURNAME_LEN];
-	char surname[NAME_SURNAME_LEN];
-
-	assert(i < report->num_flights);
-
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, surname, NAME_SURNAME_LEN);
-	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, name, NAME_SURNAME_LEN);
-
-	if(mysql_stmt_bind_result(booking_report, param)) {
-		/* TODO: better handling of the error: shall free only memory that was correctly allocated
-		         so far, and return silently to the user interface... */
-		finish_with_stmt_error(conn, booking_report, "[FATAL] Unable to bind column parameters\n", false);
-	}
-
-	// store_results should be called *after* binding and *before* fetching rows.
-	mysql_stmt_store_result(booking_report);
-	report->flights[i].bookings = malloc(sizeof(*report->flights[i].bookings) * mysql_stmt_num_rows(booking_report));
-	report->flights[i].num_bookings = mysql_stmt_num_rows(booking_report);
-
-	/* assemble booking general information */
-	while (true) {
-		status = mysql_stmt_fetch(booking_report);
-
-		if (status == 1 || status == MYSQL_NO_DATA)
-			break;
-
-		strcpy(report->flights[i].bookings[row].name, name);
-		strcpy(report->flights[i].bookings[row].surname, surname);
-
-		row++;
-	}
-}
-
-
-struct booking_report *do_booking_report(void)
-{
-	struct booking_report *report = NULL;
-	unsigned count = 0;
-	int status;
-
-	if (mysql_stmt_execute(booking_report) != 0) {
-		print_stmt_error(booking_report, "An error occurred while retrieving booking information for report.");
-		goto out;
-	}
-
-	// We have multiple result sets here!
-	do {
-		// Skip OUT variables (although they are not present in the procedure...)
-		if(conn->server_status & SERVER_PS_OUT_PARAMS) {
-			goto next;
-		}
-
-		if(count == 0) {
-			report = extract_flight_information();
-			if(report == NULL)
-				goto out;
-		} else if(count - 1 < report->num_flights) {
-			extract_booking_information(report, count - 1);
-		}
-
-    next:
-		mysql_stmt_free_result(booking_report);
-		// more results? -1 = no, >0 = error, 0 = yes (keep looking)
-		status = mysql_stmt_next_result(booking_report);
-		if (status > 0)
-			// TODO: better handling, with memory reclaim, silent return to user, etc...
-			finish_with_stmt_error(conn, booking_report, "Unexpected condition", false);
-
-		count++;
-
-	} while (status == 0);
-
-    out:
-	mysql_stmt_free_result(booking);
-	mysql_stmt_reset(booking);
-	return report;
-}
-
-
-void booking_report_dispose(struct booking_report *report)
-{
-	for(size_t i = 0; i < report->num_flights; i++) {
-		free(report->flights[i].bookings);
-	}
-	free(report);
-}
