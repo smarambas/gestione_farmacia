@@ -74,10 +74,14 @@ struct lettera_acquisto {
 	struct prodotto_richiesto richieste[];
 }
 
+struct interazione {
+	char cat1[STR_LEN];
+	char cat2[STR_LEN];
+}
+
 struct interazioni {
-	char nome_categoria[STR_LEN];
 	unsigned num_interazioni;
-	char cat_interagenti[][STR_LEN];
+	struct interazione cat_interagenti[];
 }
 
 struct scatola {
@@ -137,4 +141,29 @@ extern void do_remove_box(struct scatola *box);
 extern void do_update_stock(struct prodotto *prodotto) 
 
 extern struct prodotto *do_get_product_info(struct prodotto *prod);
+extern void do_add_category(char *categoria);
+extern void do_add_interaction(struct interazione *inter);
+extern
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

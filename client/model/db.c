@@ -703,11 +703,63 @@ struct prodotto *do_get_product_info(struct prodotto *prod)
 	return prodotto;
 }
 
+void do_add_category(char *categoria)
+{
+	MYSQL_BIND param[1];
 
+	// Bind parameters
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, categoria, strlen(categoria));
 
+	if(mysql_stmt_bind_param(add_category, param) != 0) {
+		print_stmt_error(add_category, "Could not bind parameters for add_category");
+		return;
+	}
 
+	// Run procedure
+	if(mysql_stmt_execute(add_category) != 0) {
+		print_stmt_error(add_category, "Could not execute add category procedure");
+		return;
+	}
 
+	mysql_stmt_free_result(add_category);
+	mysql_stmt_reset(add_category);
+}
 
+void do_add_interaction(struct interazione *inter)
+{
+	MYSQL_BIND param[2];
+
+	// Bind parameters
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, inter->cat1, strlen(inter->cat1));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, inter->cat2, strlen(inter->cat2));
+
+	if(mysql_stmt_bind_param(add_interaction, param) != 0) {
+		print_stmt_error(add_interaction, "Could not bind parameters for add_interaction");
+		return;
+	}
+
+	// Run procedure
+	if(mysql_stmt_execute(add_interaction) != 0) {
+		print_stmt_error(add_interaction, "Could not execute add interaction procedure");
+		return;
+	}
+
+	mysql_stmt_free_result(add_interaction);
+	mysql_stmt_reset(add_interaction);
+}
+
+struct interazioni *do_get_interacting_categories(struct prodotto *prod)
+{
+	size_t row = 0;
+	MYSQL_BIND param[2];
+	
+	char cat1[STR_LEN];
+	char cat2[STR_LEN];
+	
+	struct interazioni *interazioni = NULL;
+	
+	
+}
 
 
 
