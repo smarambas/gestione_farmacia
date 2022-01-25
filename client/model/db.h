@@ -41,10 +41,20 @@ struct prodotto {
 	bool mutuabile;
 }
 
+struct prodotti_magazzino {
+    unsigned num_prodotti;
+    struct prodotto *prodotti;
+};
+
 struct recapito {
 	char contatto[STR_LEN];
 	bool preferito;
 }
+
+struct recapiti {
+    unsigned num_recapiti;
+    struct recapito *lista_recapiti;
+};
 
 struct indirizzo {
 	char citta[STR_LEN];
@@ -53,12 +63,15 @@ struct indirizzo {
 	bool fatturazione;
 }
 
+struct indirizzi {
+    unsigned num_indirizzi;
+    struct indirizzo *lista_indirizzi;
+};
+
 struct fornitore {
 	char nome[STR_LEN];
-	unsigned num_recapiti;
-	struct recapito recapiti[];
-	unsigned num_indirizzi;
-	struct indirizzo indirizzi[];
+	struct indirizzi *indirizzi;
+    struct recapiti *recapiti;
 }
 
 struct prodotto_richiesto {
@@ -71,7 +84,7 @@ struct lettera_acquisto {
 	int codice;
 	char giorno[DATE_LEN];
 	unsigned num_richieste;
-	struct prodotto_richiesto richieste[];
+	struct prodotto_richiesto *richieste;
 }
 
 struct interazione {
@@ -81,7 +94,7 @@ struct interazione {
 
 struct interazioni {
 	unsigned num_interazioni;
-	struct interazione cat_interagenti[];
+	struct interazione *cat_interagenti;
 }
 
 struct scatola {
@@ -95,7 +108,7 @@ struct scatole_prodotto {
 	char nome_prodotto[STR_LEN];
 	char nome_fornitore[STR_LEN];
 	unsigned num_scatole;
-	struct scatola scatole[];
+	struct scatola *scatole;
 }
 
 struct scaffale {
@@ -105,7 +118,7 @@ struct scaffale {
 
 struct magazzino {
 	unsigned num_scaffali;
-	struct scaffale scaffali[];
+	struct scaffale *scaffali;
 }
 
 struct prodotto_venduto {
@@ -121,9 +134,8 @@ struct vendita {
 	int scontrino;
 	char giorno[DATE_LEN];
 	unsigned num_prodotti;
-	struct prodotto_venduto prod_venduti[];
+	struct prodotto_venduto *prod_venduti;
 }
-
 
 extern bool init_db(void);
 extern void fini_db(void);
@@ -143,8 +155,18 @@ extern void do_update_stock(struct prodotto *prodotto)
 extern struct prodotto *do_get_product_info(struct prodotto *prod);
 extern void do_add_category(char *categoria);
 extern void do_add_interaction(struct interazione *inter);
-extern
+extern struct interazioni *do_get_interacting_categories(struct prodotto *prod);
+extern struct vendita *do_record_sale(void);
+extern void do_add_product_to_sale(struct vendita *vendita, struct prodotto *prodotto);
 
+extern void do_add_cosmetic(struct prodotto *prodotto);
+extern void do_add_medicine(struct prodotto *prodotto);
+extern struct prodotti_magazzino *do_get_stock_report(void);
+extern void do_remove_product(struct prodotto *prodotto);
+extern void do_add_supplier(char *fornitore);
+extern void do_remove_supplier(char *fornitore);
+extern struct fornitore *do_get_info_supplier(struct fornitore *fornitore);
+extern
 
 
 
