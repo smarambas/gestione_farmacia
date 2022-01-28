@@ -26,3 +26,48 @@ int get_medical_action(void) {
 	op = multi_choice("Select an option", options, 8);
 	return op - '1';
 }
+
+void get_medical_prod_name(struct prodotto *prod)
+{
+    clear_screen();
+    puts("** Select a product **\n");
+
+	get_input("Insert product name: ", STR_LEN, prod->nome, false);
+    get_input("Insert product supplier name: ", STR_LEN, prod->nome_fornitore, false);
+}
+
+void show_product_info(struct prodotto *prod)
+{
+    clear_screen();
+    puts("** Product info **\n");
+
+    char type[STR_LEN];
+    char ricetta[STR_LEN];
+    char mutuabile[STR_LEN];
+
+    if(prod->tipo == 'M') {
+        type = "Medicine";
+        if (prod->ricetta)
+            ricetta = "Yes";
+        else
+            ricetta = "No";
+        if (prod->mutuabile)
+            mutuabile = "Yes";
+        else
+            mutuabile = "No";
+
+        printf("\nProduct name: %s\nProduct supplier: %s\nType of product: %s\n /"
+               "Stock quantities: %d\nCategory: %s\nPrescription required: %s\n /"
+               "Mutuabile: %s\n", prod->nome, prod->nome_fornitore, type, prod->quantita, prod->categoria, ricetta, mutuabile);
+        printf("Usage: \n\n");
+        for(int i = 0; i < prod->num_usi; i++) {
+            printf("%s\n", prod->usi[i].text);
+        }
+    }
+    else {
+        type = "Cosmetic";
+        printf("\nProduct name: %s\nProduct supplier: %s\nType of product: %s\n /"
+               "Stock quantities: %d\n", prod->nome, prod->nome_fornitore, type, prod->quantita);
+    }
+}
+

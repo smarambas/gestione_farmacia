@@ -12,3 +12,7 @@ enum actions {
 	QUIT,
 	END_OF_ACTIONS
 };
+
+extern int get_medical_action(void);
+extern void get_medical_prod_name(struct prodotto *prod);
+extern void show_product_info(struct prodotto *prod);
