@@ -161,14 +161,15 @@ extern bool init_db(void);
 extern void fini_db(void);
 
 extern void db_switch_to_login(void);
-extern void db_switch_to_administrator(void);
+extern void db_switch_to_administration(void);
 extern void db_switch_to_medical(void);
 
 extern role_t attempt_login(struct credentials *cred);
 
 extern void do_add_product_description(struct prodotto *prodotto, struct descrizione *descrizione);
-extern struct scaffale * do_get_shelves(void);
+extern struct magazzino * do_get_shelves(void);
 extern void magazzino_dispose(struct magazzino *magazzino);
+extern struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod);
 extern void do_remove_box(struct scatola *box);
 extern void do_update_stock(struct prodotto *prodotto) 
 
@@ -176,8 +177,9 @@ extern struct prodotto *do_get_product_info(struct prodotto *prod);
 extern void do_add_category(char *categoria);
 extern void do_add_interaction(struct interazione *inter);
 extern struct interazioni *do_get_interacting_categories(struct prodotto *prod);
+extern void dispose_interactions(struct interazioni *interazioni);
 extern struct vendita *do_record_sale(void);
-extern void do_add_product_to_sale(struct vendita *vendita, struct prodotto *prodotto);
+extern void do_add_product_to_sale(struct vendita *vendita, struct prodotto_venduto *prodottoVenduto);
 
 extern void do_add_cosmetic(struct prodotto *prodotto);
 extern void do_add_medicine(struct prodotto *prodotto);

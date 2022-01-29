@@ -24,6 +24,7 @@ static MYSQL_STMT *add_interaction;
 static MYSQL_STMT *get_interacting_categories;
 static MYSQL_STMT *record_sale;
 static MYSQL_STMT *add_product_to_sale;
+static MYSQL_STMT *get_product_boxes;
 
 //ammin procedures
 static MYSQL_STMT *add_cosmetic;
@@ -64,6 +65,10 @@ static void close_prepared_stmts(void)
 		mysql_stmt_close(get_shelves);
 		get_shelves = NULL;
 	}
+    if(get_product_boxes) {
+        mysql_stmt_close(get_product_boxes);
+		get_product_boxes = NULL;
+    }
 	if(remove_box) {
 		mysql_stmt_close(remove_box);
 		remove_box = NULL;
@@ -294,6 +299,10 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(get_shelves, "Unable to initialize get shelves statement\n");
 				return false;
 			}
+            if(!setup_prepared_stmt(&get_product_boxes, "call lista_scatole_prodotto(?, ?)", conn)) {
+				print_stmt_error(get_product_boxes, "Unable to initialize get product boxes statement\n");
+				return false;
+			}
 			if(!setup_prepared_stmt(&remove_box, "call rimuovi_scatola(?)", conn)) {
 				print_stmt_error(remove_box, "Unable to initialize remove box statement\n");
 				return false;
@@ -336,6 +345,10 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(get_shelves, "Unable to initialize get shelves statement\n");
 				return false;
 			}
+            if(!setup_prepared_stmt(&get_product_boxes, "call lista_scatole_prodotto(?, ?)", conn)) {
+                print_stmt_error(get_product_boxes, "Unable to initialize get product boxes statement\n");
+                return false;
+            }
 			if(!setup_prepared_stmt(&remove_box, "call rimuovi_scatola(?)", conn)) {
 				print_stmt_error(remove_box, "Unable to initialize remove box statement\n");
 				return false;
@@ -409,7 +422,7 @@ void db_switch_to_login(void)
 }
 
 
-void db_switch_to_administrator(void)
+void db_switch_to_administration(void)
 {
 	close_prepared_stmts();
 	if(mysql_change_user(conn, getenv("ADMIN_USER"), getenv("ADMIN_PASS"), getenv("DB"))) {
@@ -509,7 +522,7 @@ void do_add_product_description(struct prodotto *prodotto, struct descrizione *d
 	mysql_stmt_reset(add_product_description);
 }
 
-struct scaffale *do_get_shelves(void)
+struct magazzino *do_get_shelves(void)
 {
 	int status;
 	size_t row = 0;
@@ -567,6 +580,78 @@ struct scaffale *do_get_shelves(void)
 void magazzino_dispose(struct magazzino *magazzino)
 {
 	free(magazzino);
+}
+
+struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
+{
+    int status;
+	size_t row = 0;
+	MYSQL_BIND param[3];
+
+    int codice;
+    int cassetto;
+    int scaffale;
+
+	struct scatole_prodotto *scatoleProdotto = NULL;
+
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prod->nome_prodotto, strlen(prod->nome));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prod->nome_fornitore, strlen(prod->nome_fornitore));
+
+	if(mysql_stmt_bind_param(get_product_boxes, param)) {
+		print_stmt_error(get_product_boxes, "Could not bind input parameters");
+		goto out;
+	}
+
+	// Run procedure
+	if(mysql_stmt_execute(get_product_boxes) != 0) {
+        if (conn != NULL) {
+            if(strcmp(mysql_sqlstate(conn), "45003") != 0)
+                print_stmt_error(get_product_boxes, "Could not execute get product boxes procedure");
+        }
+
+		goto out;
+	}
+
+	mysql_stmt_store_result(get_product_boxes);
+
+    scatoleProdotto = malloc(sizeof(*scatoleProdotto) + sizeof(struct scatola) * mysql_stmt_num_rows(get_product_boxes));
+    if(scatoleProdotto == NULL)
+		goto out;
+    memset(scatoleProdotto, 0, sizeof(*scatoleProdotto) + sizeof(struct scatola) * mysql_stmt_num_rows(get_product_boxes));
+    scatoleProdotto->num_scatole = mysql_stmt_num_rows(get_product_boxes);
+
+	// Prepare output parameters
+	set_binding_param(&param[0], MYSQL_TYPE_LONG, &codice, sizeof(codice));
+	set_binding_param(&param[1], MYSQL_TYPE_LONG, &cassetto, sizeof(cassetto));
+	set_binding_param(&param[2], MYSQL_TYPE_LONG, &scaffale, sizeof(scaffale));
+
+	if(mysql_stmt_bind_result(get_product_boxes, param)) {
+		print_stmt_error(get_product_boxes, "Unable to bind output parameters for get product boxes\n");
+		free(scatoleProdotto);
+		scatoleProdotto = NULL;
+		goto out;
+	}
+
+    strcpy(scatoleProdotto->nome_prodotto, prod->nome);
+    strcpy(scatoleProdotto->nome_fornitore, prod->nome_fornitore);
+
+	while (true) {
+		status = mysql_stmt_fetch(get_product_boxes);
+
+		if (status == 1 || status == MYSQL_NO_DATA)
+			break;
+
+		scatoleProdotto->scatole[row].codice = codice;
+        scatoleProdotto->scatole[row].cassetto = cassetto;
+        scatoleProdotto->scatole[row].scaff.codice = scaffale;
+
+		row++;
+	}
+
+    out:
+	mysql_stmt_free_result(get_product_boxes);
+	mysql_stmt_reset(get_product_boxes);
+	return scatoleProdotto;
 }
 
 void do_remove_box(struct scatola *box)
@@ -812,6 +897,14 @@ struct interazioni *do_get_interacting_categories(struct prodotto *prod)
 	return interazioni;
 }
 
+void dispose_interactions(struct interazioni *interazioni)
+{
+    for(int i = 0; i < interazioni->num_interazioni; i++) {
+        free(interazioni->cat_interagenti[i]);
+    }
+    free(interazioni);
+}
+
 struct vendita *do_record_sale(void)
 {
     int status;
@@ -868,14 +961,17 @@ struct vendita *do_record_sale(void)
     return vendita;
 }
 
-void do_add_product_to_sale(struct vendita *vendita, struct prodotto *prodotto)
+void do_add_product_to_sale(struct vendita *vendita, struct prodotto_venduto *prodottoVenduto)
 {
-    MYSQL_BIND param[3];
+    MYSQL_BIND param[6];
 
 	// Bind parameters
-	set_binding_param(&param[0], MYSQL_TYPE_LONG, &(vendita->scontrino), strlen(vendita->scontrino));
-	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodotto->nome, strlen(prodotto->nome));
-    set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, prodotto->nome_fornitore, strlen(prodotto->nome_fornitore));
+	set_binding_param(&param[0], MYSQL_TYPE_LONG, &(vendita->scontrino), sizeof(vendita->scontrino));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodottoVenduto->nome_prodotto, strlen(prodottoVenduto->nome_prodotto));
+    set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, prodottoVenduto->nome_fornitore, strlen(prodottoVenduto->nome_fornitore));
+    set_binding_param(&param[3], MYSQL_TYPE_LONG, &(prodottoVenduto->quantita), sizeof(prodottoVenduto->quantita));
+	set_binding_param(&param[4], MYSQL_TYPE_VAR_STRING, prodottoVenduto->cf, strlen(prodottoVenduto->cf));
+    set_binding_param(&param[5], MYSQL_TYPE_VAR_STRING, prodottoVenduto->medico, strlen(prodottoVenduto->medico));
 
 	if(mysql_stmt_bind_param(add_product_to_sale, param) != 0) {
 		print_stmt_error(add_product_to_sale, "Could not bind parameters for add_product_to_sale");

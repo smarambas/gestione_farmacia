@@ -163,6 +163,50 @@ char multi_choice(char *question, const char choices[], int num)
 	}
 }
 
+int alt_multi_choice(char *question, int *choices, int num)
+{
+    char buf[50];
+    int n;
+
+    while(true) {
+        printf("%s", question);
+
+        if(fgets(buf, sizeof(buf), stdin) == NULL) {
+            printf("EOF received, leaving...\n");
+            fflush(stdout);
+            leave();
+        }
+
+        n = strtol(buf, NULL, 10);
+
+        if(n <= num) {
+            for(int i = 0; i < num; i++) {
+                if(n == choices[i])
+                    return n;
+            }
+        }
+
+        printf("\nInvalid choice, please try again...\n\n");
+    }
+}
+
+int get_int_input(char *message)
+{
+    char buf[50];
+    int n;
+
+    printf("%s", message);
+
+    if(fgets(buf, sizeof(buf), stdin) == NULL) {
+        printf("EOF received, leaving...\n");
+        fflush(stdout);
+        leave();
+    }
+
+    n = strtol(buf, NULL, 10);
+
+    return n;
+}
 
 void clear_screen(void)
 {
