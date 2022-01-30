@@ -16,6 +16,7 @@ static MYSQL_STMT *add_product_description;
 static MYSQL_STMT *get_shelves;
 static MYSQL_STMT *remove_box;
 static MYSQL_STMT *update_stock;
+static MYSQL_STMT *decrease_stock;
 
 //medical procedures
 static MYSQL_STMT *get_product_info;
@@ -76,6 +77,10 @@ static void close_prepared_stmts(void)
 	if(update_stock) {
 		mysql_stmt_close(update_stock);
 		update_stock = NULL;
+	}
+    if(decrease_stock) {
+		mysql_stmt_close(decrease_stock);
+		decrease_stock = NULL;
 	}
 	if(get_product_info) {
 		mysql_stmt_close(get_product_info);
@@ -311,6 +316,10 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(update_stock, "Unable to initialize update stock statement\n");
 				return false;
 			}
+            if(!setup_prepared_stmt(&decrease_stock, "call decrementa_giacenza(?, ?)", conn)) {
+				print_stmt_error(decrease_stock, "Unable to initialize decrease stock statement\n");
+				return false;
+			}
 			break;
 		case MEDICO:
 			if(!setup_prepared_stmt(&get_product_info, "call info_prodotto(?, ?)", conn)) {
@@ -355,6 +364,10 @@ static bool initialize_prepared_stmts(role_t for_role)
 			}
 			if(!setup_prepared_stmt(&update_stock, "call aggiorna_giacenza(?, ?, ?)", conn)) {
 				print_stmt_error(update_stock, "Unable to initialize update stock statement\n");
+				return false;
+			}
+            if(!setup_prepared_stmt(&decrease_stock, "call decrementa_giacenza(?, ?)", conn)) {
+				print_stmt_error(decrease_stock, "Unable to initialize decrease stock statement\n");
 				return false;
 			}
 			break;
@@ -654,26 +667,62 @@ struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
 	return scatoleProdotto;
 }
 
-void do_remove_box(struct scatola *box)
+struct prodotto *do_remove_box(struct scatola *box)
 {
-	MYSQL_BIND param[1];
+	MYSQL_BIND param[2];
+
+    char nome_prodotto[STR_LEN];
+    char nome_fornitore[STR_LEN];
+
+    struct prodotto *prodotto = NULL;
 
 	// Bind parameters
 	set_binding_param(&param[0], MYSQL_TYPE_LONG, &(box->codice), strlen(box->codice));
 
 	if(mysql_stmt_bind_param(remove_box, param) != 0) {
 		print_stmt_error(remove_box, "Could not bind parameters for remove_box");
-		return;
+		goto out;
 	}
 
 	// Run procedure
 	if(mysql_stmt_execute(remove_box) != 0) {
 		print_stmt_error(remove_box, "Could not execute remove box procedure");
-		return;
+		goto out;
 	}
 
+    mysql_stmt_store_result(remove_box);
+
+    prodotto = malloc(sizeof(*prodotto));
+    if(prodotto == NULL) {
+        goto out;
+    }
+    memset(prodotto, 0, sizeof(*prodotto));
+
+    // Prepare output parameters
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome_prodotto, STR_LEN);
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, nome_fornitore, STR_LEN);
+
+    if(mysql_stmt_bind_result(remove_box, param)) {
+		print_stmt_error(remove_box, "Unable to bind output parameters for remove box\n");
+		free(prodotto);
+		prodotto = NULL;
+		goto out;
+	}
+
+    while (true) {
+		status = mysql_stmt_fetch(get_product_boxes);
+
+		if (status == 1 || status == MYSQL_NO_DATA)
+			break;
+
+        strcpy(prodotto->nome, nome_prodotto);
+        strcpy(prodotto->nome_fornitore, nome_fornitore);
+	}
+
+    out:
 	mysql_stmt_free_result(remove_box);
 	mysql_stmt_reset(remove_box);
+    return prodotto;
 }
 
 void do_update_stock(struct prodotto *prodotto) 
@@ -698,6 +747,29 @@ void do_update_stock(struct prodotto *prodotto)
 
 	mysql_stmt_free_result(update_stock);
 	mysql_stmt_reset(update_stock);
+}
+
+void do_decrease_stock(struct prodotto *prod)
+{
+    MYSQL_BIND param[2];
+
+	// Bind parameters
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prodotto->nome, strlen(prodotto->nome));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodotto->nome_fornitore, strlen(prodotto->nome_fornitore));
+
+	if(mysql_stmt_bind_param(decrease_stock, param) != 0) {
+		print_stmt_error(decrease_stock, "Could not bind parameters for decrease_stock");
+		return;
+	}
+
+	// Run procedure
+	if(mysql_stmt_execute(decrease_stock) != 0) {
+		print_stmt_error(decrease_stock, "Could not execute decrease stock procedure");
+		return;
+	}
+
+	mysql_stmt_free_result(decrease_stock);
+	mysql_stmt_reset(decrease_stock);
 }
 
 struct prodotto *do_get_product_info(struct prodotto *prod)

@@ -115,7 +115,7 @@ static bool record_sale(void)
 
                         do {
                             select_box_to_remove(&box);
-                            do_remove_box(&box);
+                            do_remove_box(&box);    //I'm not interested in the result set here
                         } while(yes_or_no("\nDo you want to remove another box?", 'y', 'n', false, true));
                     }
                 }

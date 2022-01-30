@@ -6,9 +6,9 @@
 
 int get_administrative_action(void)
 {
-	int options[24] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	int options[25] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
                        11, 12, 13, 14, 15, 16, 17, 18,
-                       19, 20, 21, 22, 23, 24};
+                       19, 20, 21, 22, 23, 24, 25};
 	int op;
 
 	clear_screen();
@@ -31,17 +31,18 @@ int get_administrative_action(void)
     puts("13) Add contact to supplier");
     puts("14) Remove contact");
     puts("15) Add box");
-    puts("16) Get expiry report");
-    puts("17) Add shelf");
-    puts("18) Update shelf category");
-    puts("19) Send purchase letter to supplier");
-    puts("20) Print letters sent to supplier");
-    puts("21) Print sales made on a given date");
-    puts("22) Print sales including a product");
-    puts("23) Print most sold products list");
-	puts("24) Quit");
+    puts("16) Remove box");
+    puts("17) Get expiry report");
+    puts("18) Add shelf");
+    puts("19) Update shelf category");
+    puts("20) Send purchase letter to supplier");
+    puts("21) Print letters sent to supplier");
+    puts("22) Print sales made on a given date");
+    puts("23) Print sales including a product");
+    puts("24) Print most sold products list");
+	puts("25) Quit");
 
-	op = alt_multi_choice("Select an option: ", options, 24);
+	op = alt_multi_choice("Select an option: ", options, 25);
 	return op - 1;
 }
 
@@ -184,4 +185,73 @@ void get_supplier_contact(struct recapito *recapito, bool is_add)
 
     if(is_add)
         recapito->preferito = yes_or_no("Is it a preferred contact? ", 'y', 'n', false, true);
+}
+
+void get_box_info(struct scatola *scatola)
+{
+    clear_screen();
+    puts("** Register a box **\n");
+
+    while(true) {
+		get_input("Insert expiration date [YYYY-MM-DD]: ", DATE_LEN, scatola->scadenza, false);
+		if(validate_date(scatola->scadenza))
+			break;
+		fprintf(stderr, "Invalid date!\n");
+	}
+    scatola->scaff.codice = get_int_input("Insert shelf number: ");
+    scatola->cassetto = get_int_input("Insert drawer number: ");
+}
+
+void get_box_code(struct scatola *scatola, bool clear)
+{
+    if(clear)
+        clear_screen();
+
+    puts("** Select a box **\n");
+
+    scatola->codice = get_int_input("Insert box code: ");
+}
+
+void print_expiry_report(struct scatole_in_scadenza *scatoleInScadenza)
+{
+    clear_screen();
+    puts("** Expiry report **\n");
+
+    for(int i = 0; i < scatoleInScadenza->num_in_scadenza; i++) {
+        printf("* Box #%d\nProduct: %s\nSupplier: %s\nShelf: %d\nDrawer: %d\nExpiration date: %s\n\n",
+               scatoleInScadenza->scatole[i].scatole->codice,
+               scatoleInScadenza->scatole[i].nome_prodotto,
+               scatoleInScadenza->scatole[i].nome_fornitore,
+               scatoleInScadenza->scatole[i].scatole->scaff.codice,
+               scatoleInScadenza->scatole[i].scatole->cassetto,
+               scatoleInScadenza->scatole[i].scatole->scadenza);
+    }
+    puts("\n");
+}
+
+void get_shelf_category(struct scaffale *scaffale)
+{
+    clear_screen();
+    puts("** Add new shelf **\n");
+
+    get_input("Insert shelf category: ", STR_LEN, scaffale->categoria, false);
+}
+
+void modify_shelf_category(struct scaffale *scaffale)
+{
+    clear_screen();
+    puts("** Modify shelf category **\n");
+
+    scaffale->codice = get_int_input("Select shelf: ");
+    get_input("Insert shelf new category: ", STR_LEN, scaffale->categoria, false);
+}
+
+void get_product_for_letter(struct prodotto_richiesto *prodottoRichiesto)
+{
+    clear_screen();
+    puts("** Add product to purchase letter **\n");
+
+    get_input("Insert product name: ", STR_LEN, prodottoRichiesto->nome_prodotto, false);
+    get_input("Insert supplier name: ", STR_LEN, prodottoRichiesto->nome_fornitore, false);
+    prodottoRichiesto->quantita = get_int_input("Insert requested quantity: ");
 }

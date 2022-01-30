@@ -26,6 +26,7 @@ static bool print_shelves(void)
     struct magazzino *magazzino = do_get_shelves();
     if(magazzino != NULL) {
         print_lista_scaffali(magazzino);
+        magazzino_dispose(magazzino);
     }
 
     return false;
@@ -181,27 +182,108 @@ static bool remove_contact(void)
 
 static bool add_box(void)
 {
+    struct prodotto prod;
+    memset(&prod, 0, sizeof(prod));
+    get_product_name(&prod);
 
+    struct scatola scatola;
+    memset(&scatola, 0, sizeof(scatola));
+    get_box_info(&scatola);
+
+    do_add_box(&prod, &scatola);
+
+    return false;
+}
+
+static bool remove_box(void)
+{
+    struct scatola scatola;
+    memset(&scatola, 0, sizeof(scatola));
+    get_box_code(&scatola, true);
+
+    struct prodotto *prodotto = do_remove_box(&scatola);
+    if(prodotto != NULL) {
+        do_decrease_stock(prodotto);
+        free(prodotto);
+    }
+
+    return false;
+}
+
+static void remove_box_expiry(void)
+{
+    struct scatola scatola;
+    memset(&scatola, 0, sizeof(scatola));
+    get_box_code(&scatola, false);
+
+    struct prodotto *prodotto = do_remove_box(&scatola);
+    if(prodotto != NULL) {
+        do_decrease_stock(prodotto);
+        free(prodotto);
+    }
+
+    return false;
 }
 
 static bool get_expiry_report(void)
 {
+    struct scatole_in_scadenza *scatoleInScadenza;
+    scatoleInScadenza = do_get_expiry_report();
+    if(scatoleInScadenza != NULL) {
+        print_expiry_report(scatoleInScadenza);
 
+        while(yes_or_no("Do you want to remove a box?", 'y', 'n', false, true)) {
+            remove_box_expiry();
+
+            printf("\n");
+        }
+
+        dispose_in_scadenza(scatoleInScadenza);
+    }
+
+    return false;
 }
 
 static bool add_shelf(void)
 {
+    struct scaffale scaffale;
+    memset(&scaffale, 0, sizeof(scaffale));
+    get_shelf_category(&scaffale);
 
+    do_add_shelf(&scaffale);
+
+    return false;
 }
 
 static bool update_shelf(void)
 {
+    struct scaffale scaffale;
+    memset(&scaffale, 0, sizeof(scaffale));
+    modify_shelf_category(&scaffale);
 
+    do_update_shelf_category(&scaffale);
+
+    return false;
 }
 
 static bool send_letter(void)
 {
+    struct lettera_acquisto *letteraAcquisto;
+    letteraAcquisto = do_get_purchase_letter();
+    if(letteraAcquisto != NULL) {
+        struct prodotto_richiesto prodottoRichiesto;
 
+        do{
+            memset(&prodottoRichiesto, 0, sizeof(prodottoRichiesto));
+            get_product_for_letter(&prodottoRichiesto);
+
+            do_add_product_to_letter(letteraAcquisto, &prodottoRichiesto);
+        }while(yes_or_no("Do you want to add another product to the letter?", 'y', 'n', false, true));
+    }
+
+    free(letteraAcquisto);
+
+    return false;
 }
 
 static bool print_letters(void)
@@ -248,6 +330,7 @@ static struct {
     {.action = ADD_CONTACT, .control = add_contact},
     {.action = REMOVE_CONTACT, .control = remove_contact},
     {.action = ADD_BOX, .control = add_box},
+    {.action = REMOVE_BOX, .control = remove_box},
     {.action = GET_EXPIRY_REPORT, .control = get_expiry_report},
     {.action = ADD_SHELF, .control = add_shelf},
     {.action = UPDATE_SHELF, .control = update_shelf},

@@ -17,6 +17,7 @@ enum actions {
     ADD_CONTACT,
     REMOVE_CONTACT,
     ADD_BOX,
+    REMOVE_BOX,
     GET_EXPIRY_REPORT,
     ADD_SHELF,
     UPDATE_SHELF,
@@ -41,4 +42,10 @@ extern void print_supplier_info(struct fornitore *fornitore);
 extern void print_supplier_prod(struct prodotti_magazzino *prodottiMagazzino);
 extern void get_supplier_address(struct indirizzo *indirizzo, bool is_add);
 extern void get_supplier_contact(struct recapito *recapito, bool is_add);
+extern void get_box_info(struct scatola *scatola);
+extern void get_box_code(struct scatola *scatola, bool clear);
+extern void print_expiry_report(struct scatole_in_scadenza *scatoleInScadenza);
+extern void get_shelf_category(struct scaffale *scaffale);
+extern void modify_shelf_category(struct scaffale *scaffale);
+extern void get_product_for_letter(struct prodotto_richiesto *prodottoRichiesto);
 extern
