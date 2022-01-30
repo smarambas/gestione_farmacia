@@ -6,7 +6,223 @@
 #include "../view/amministrativo.h"
 #include "../utils/io.h"
 
+static bool prod_description(void)
+{
+    struct prodotto prod;
+    memset(&prod, 0, sizeof(prod));
+    get_product_name(&prod);
 
+    struct descrizione descr;
+    memset(&descr, 0, sizeof(descr));
+    get_product_description(&descr);
+
+    do_add_product_description(&prod, &descr);
+
+    return false;
+}
+
+static bool print_shelves(void)
+{
+    struct magazzino *magazzino = do_get_shelves();
+    if(magazzino != NULL) {
+        print_lista_scaffali(magazzino);
+    }
+
+    return false;
+}
+
+static bool add_cosmetic(void)
+{
+    struct prodotto prod;
+    memset(&prod, 0, sizeof(prod));
+    get_cosmetic(&prod);
+
+    do_add_cosmetic(&prod);
+
+    return false;
+}
+
+static bool add_medicine(void)
+{
+    struct prodotto prod;
+    memset(&prod, 0, sizeof(prod));
+    get_medicine(&prod);
+
+    do_add_medicine(&prod);
+
+    return false;
+}
+
+static bool get_stock_report(void)
+{
+    struct prodotti_magazzino *prodottiMagazzino;
+    prodottiMagazzino = do_get_stock_report();
+
+    if(prodottiMagazzino != NULL) {
+        print_stock_report(prodottiMagazzino);
+    }
+
+    return false;
+}
+
+static bool remove_product(void)
+{
+    struct prodotto prod;
+    memset(&prod, 0, sizeof(prod));
+    get_product_name(&prod);
+
+    do_remove_product(&prod);
+
+    return false;
+}
+
+static bool add_supplier(void)
+{
+    struct fornitore fornitore;
+    memset(&fornitore, 0, sizeof(fornitore));
+    get_supplier_name(&fornitore);
+
+    do_add_supplier(&fornitore);
+
+    return false;
+}
+
+static bool remove_supplier(void)
+{
+    struct fornitore fornitore;
+    memset(&fornitore, 0, sizeof(fornitore));
+    get_supplier_name(&fornitore);
+
+    do_remove_supplier(&fornitore);
+
+    return false;
+}
+
+static bool get_supplier_info(void)
+{
+    struct fornitore *fornitore;
+    memset(fornitore, 0, sizeof(*fornitore));
+    get_supplier_name(fornitore);
+
+    fornitore = do_get_info_supplier(fornitore);
+    if(fornitore != NULL) {
+        print_supplier_info(fornitore);
+    }
+
+    return false;
+}
+
+static bool get_supplier_prod(void)
+{
+    struct fornitore fornitore;
+    memset(&fornitore, 0, sizeof(fornitore));
+    get_supplier_name(&fornitore);
+
+    struct prodotti_magazzino *prodottiMagazzino;
+    prodottiMagazzino = do_get_supplier_products(&fornitore);
+    if(prodottiMagazzino != NULL) {
+        print_supplier_prod(prodottiMagazzino);
+    }
+
+    return false;
+}
+
+static bool add_address(void)
+{
+    struct fornitore fornitore;
+    memset(&fornitore, 0, sizeof(fornitore));
+    get_supplier_name(&fornitore);
+
+    struct indirizzo indirizzo;
+    memset(&indirizzo, 0, sizeof(indirizzo));
+    get_supplier_address(&indirizzo, true);
+
+    do_add_address(&indirizzo, &fornitore);
+
+    return false;
+}
+
+static bool remove_address(void)
+{
+    struct indirizzo indirizzo;
+    memset(&indirizzo, 0, sizeof(indirizzo));
+    get_supplier_address(&indirizzo, false);
+
+    do_remove_address(&indirizzo);
+
+    return false;
+}
+
+static bool add_contact(void)
+{
+    struct fornitore fornitore;
+    memset(&fornitore, 0, sizeof(fornitore));
+    get_supplier_name(&fornitore);
+
+    struct recapito recapito;
+    memset(&recapito, 0, sizeof(recapito));
+    get_supplier_contact(&recapito, true);
+
+    do_add_contact(&recapito, &fornitore);
+
+    return false;
+}
+
+static bool remove_contact(void)
+{
+    struct recapito recapito;
+    memset(&recapito, 0, sizeof(recapito));
+    get_supplier_contact(&recapito, false);
+
+    do_remove_contact(&recapito);
+
+    return false;
+}
+
+static bool add_box(void)
+{
+
+}
+
+static bool get_expiry_report(void)
+{
+
+}
+
+static bool add_shelf(void)
+{
+
+}
+
+static bool update_shelf(void)
+{
+
+}
+
+static bool send_letter(void)
+{
+
+}
+
+static bool print_letters(void)
+{
+
+}
+
+static bool print_sales_date(void)
+{
+
+}
+
+static bool print_sales_prod(void)
+{
+
+}
+
+static bool print_most_sold(void)
+{
+
+}
 
 static bool quit(void)
 {
@@ -25,8 +241,8 @@ static struct {
     {.action = REMOVE_PRODUCT, .control = remove_product},
     {.action = ADD_SUPPLIER, .control = add_supplier},
     {.action = REMOVE_SUPPLIER, .control = remove_supplier},
-    {.action = PRINT_SUPPLIER_INFO, .control = print_supplier_info},
-    {.action = PRINT_SUPPLIER_PROD, .control = print_supplier_prod},
+    {.action = GET_SUPPLIER_INFO, .control = get_supplier_info},
+    {.action = GET_SUPPLIER_PROD, .control = get_supplier_prod},
     {.action = ADD_ADDRESS, .control = add_address},
     {.action = REMOVE_ADDRESS, .control = remove_address},
     {.action = ADD_CONTACT, .control = add_contact},

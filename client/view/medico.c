@@ -41,33 +41,23 @@ void show_product_info(struct prodotto *prod)
     clear_screen();
     puts("** Product info **\n");
 
-    char type[STR_LEN];
-    char ricetta[STR_LEN];
-    char mutuabile[STR_LEN];
-
     if(prod->tipo == 'M') {
-        type = "Medicine";
-        if (prod->ricetta)
-            ricetta = "Yes";
-        else
-            ricetta = "No";
-        if (prod->mutuabile)
-            mutuabile = "Yes";
-        else
-            mutuabile = "No";
-
-        printf("\nProduct name: %s\nProduct supplier: %s\nType of product: %s\n /"
-               "Stock quantities: %d\nCategory: %s\nPrescription required: %s\n /"
-               "Mutuabile: %s\n", prod->nome, prod->nome_fornitore, type, prod->quantita, prod->categoria, ricetta, mutuabile);
-        printf("Usage: \n\n");
+        printf("\nProduct name: %s\nSupplier: %s\nType: %c\nCategory: %s\nNeeds prescription: %s\nMutuabile: %s\nIn stock: %d\n",
+               prod->nome,
+               prod->nome_fornitore,
+               prod->tipo,
+               prod->categoria,
+               prod->ricetta ? "yes" : "no",
+               prod->mutuabile ? "yes" : "no",
+               prod->quantita);
+        printf("Usage: \n");
         for(int i = 0; i < prod->num_usi; i++) {
-            printf("%s\n", prod->usi[i].text);
+            printf("%d) %s\n", i, prod->usi[i].text);
         }
     }
     else {
-        type = "Cosmetic";
-        printf("\nProduct name: %s\nProduct supplier: %s\nType of product: %s\n /"
-               "Stock quantities: %d\n", prod->nome, prod->nome_fornitore, type, prod->quantita);
+        printf("\nProduct name: %s\nSupplier: %s\nType: %c\nIn stock: %d\n",
+               prod->nome, prod->nome_fornitore, prod->tipo, prod->quantita);
     }
 }
 
