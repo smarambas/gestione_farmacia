@@ -1,4 +1,9 @@
-all:
-	gcc -g *.c -Wall -Wextra -o client `mysql_config --cflags --include --libs`
+all: clean
+	mkdir build
+	cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make
+	mv ./build/gestione_farmacia .
+
+.PHONY: clean
 clean:
-	-rm client
+	-rm -rf build
+	-unlink gestione_farmacia
