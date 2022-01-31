@@ -124,7 +124,7 @@ void print_boxes_codes(struct scatole_prodotto *scatoleProdotto)
     puts("** Remove sold boxes **\n");
 
     for(int i = 0; i < scatoleProdotto->num_scatole; i++) {
-        printf("Box #%d (Shelf #%d ---> Drawer #%d)\n", scatoleProdotto->scatole[i].codice, scatoleProdotto->scatole[i].scaff.codice, scatoleProdotto->scatole[i].cassetto)
+        printf("Box #%d (Shelf #%d ---> Drawer #%d)\n", scatoleProdotto->scatole[i].codice, scatoleProdotto->scatole[i].scaff.codice, scatoleProdotto->scatole[i].cassetto);
     }
     puts("\n");
 }

@@ -21,7 +21,7 @@ add_executable(gestione_farmacia
 )
 
 include_directories(${MYSQL_INCLUDE_DIR})
-target_link_libraries(airport ${MYSQL_LIBRARIES})
+target_link_libraries(gestione_farmacia ${MYSQL_LIBRARIES})
 
 if(MSVC)
     add_compile_options(PRIVATE /W4 /WX)

@@ -225,7 +225,7 @@ static void remove_box_expiry(void)
         free(prodotto);
     }
 
-    return false;
+    return;
 }
 
 static bool get_expiry_report(void)

@@ -578,8 +578,8 @@ struct magazzino *do_get_shelves(void)
 		if (status == 1 || status == MYSQL_NO_DATA)
 			break;
 
-		strcpy(magazzino->magazzino[row].codice, codice);
-		strcpy(magazzino->magazzino[row].categoria, categoria);
+        magazzino->scaffali[row].codice = codice;
+		strcpy(magazzino->scaffali[row].categoria, categoria);
 		
 		row++;
 	}
@@ -607,7 +607,7 @@ struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
 
 	struct scatole_prodotto *scatoleProdotto = NULL;
 
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prod->nome_prodotto, strlen(prod->nome));
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prod->nome_prodotto, strlen(prod->nome_prodotto));
 	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prod->nome_fornitore, strlen(prod->nome_fornitore));
 
 	if(mysql_stmt_bind_param(get_product_boxes, param)) {
@@ -645,7 +645,7 @@ struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
 		goto out;
 	}
 
-    strcpy(scatoleProdotto->nome_prodotto, prod->nome);
+    strcpy(scatoleProdotto->nome_prodotto, prod->nome_prodotto);
     strcpy(scatoleProdotto->nome_fornitore, prod->nome_fornitore);
 
 	while (true) {
@@ -669,7 +669,8 @@ struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
 
 struct prodotto *do_remove_box(struct scatola *box)
 {
-	MYSQL_BIND param[2];
+	int status;
+    MYSQL_BIND param[2];
 
     char nome_prodotto[STR_LEN];
     char nome_fornitore[STR_LEN];
@@ -677,7 +678,7 @@ struct prodotto *do_remove_box(struct scatola *box)
     struct prodotto *prodotto = NULL;
 
 	// Bind parameters
-	set_binding_param(&param[0], MYSQL_TYPE_LONG, &(box->codice), strlen(box->codice));
+	set_binding_param(&param[0], MYSQL_TYPE_LONG, &(box->codice), sizeof(box->codice));
 
 	if(mysql_stmt_bind_param(remove_box, param) != 0) {
 		print_stmt_error(remove_box, "Could not bind parameters for remove_box");
@@ -754,8 +755,8 @@ void do_decrease_stock(struct prodotto *prod)
     MYSQL_BIND param[2];
 
 	// Bind parameters
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prodotto->nome, strlen(prodotto->nome));
-	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodotto->nome_fornitore, strlen(prodotto->nome_fornitore));
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prod->nome, strlen(prod->nome));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prod->nome_fornitore, strlen(prod->nome_fornitore));
 
 	if(mysql_stmt_bind_param(decrease_stock, param) != 0) {
 		print_stmt_error(decrease_stock, "Could not bind parameters for decrease_stock");
@@ -839,21 +840,18 @@ struct prodotto *do_get_product_info(struct prodotto *prod)
 		if (status == 1 || status == MYSQL_NO_DATA)
 			break;
 
-		if(cont == 0) {
-			strcpy(prodotto->prodotto[row].nome, nome);
-			strcpy(prodotto->prodotto[row].nome_fornitore, nome_fornitore);
-			strcpy(prodotto->prodotto[row].tipo, tipo);
-			prodotto->prodotto[row].quantita = quantita;
-            //memcpy(&(prodotto->prodotto[row].quantita), &quantita, sizeof(quantita));
-			strcpy(prodotto->prodotto[row].categoria, categoria);
-			prodotto->prodotto[row].ricetta = ricetta;
-            //memcpy(&(prodotto->prodotto[row].ricetta), &ricetta, sizeof(ricetta));
-			prodotto->prodotto[row].mutuabile = mutuabile;
-            //memcpy(&(prodotto->prodotto[row].mutuabile), &mutuabile, sizeof(mutuabile));
+		if(row == 0) {
+
+			strcpy(prodotto->nome, nome);
+			strcpy(prodotto->nome_fornitore, nome_fornitore);
+			strcpy(&(prodotto->tipo), &tipo);
+			prodotto->quantita = quantita;
+			strcpy(prodotto->categoria, categoria);
+			prodotto->ricetta = ricetta;
+			prodotto->mutuabile = mutuabile;
 		}
-		strcpy(prodotto->prodotto[row].usi[cont], descrizione);
+		strcpy(prodotto->usi[row].text, descrizione);
 		
-		cont++;
 		row++;
 	}
 	
@@ -911,6 +909,7 @@ void do_add_interaction(struct interazione *inter)
 struct interazioni *do_get_interacting_categories(struct prodotto *prod)
 {
 	size_t row = 0;
+    int status;
 	MYSQL_BIND param[2];
 	
 	char cat1[STR_LEN];
@@ -946,8 +945,8 @@ struct interazioni *do_get_interacting_categories(struct prodotto *prod)
 
 	if(mysql_stmt_bind_result(get_interacting_categories, param)) {
 		print_stmt_error(get_interacting_categories, "Unable to bind output parameters for get interacting categories\n");
-		free(prodotto);
-		prodotto = NULL;
+		free(interazioni);
+		interazioni = NULL;
 		goto out;
 	}
 
@@ -971,10 +970,9 @@ struct interazioni *do_get_interacting_categories(struct prodotto *prod)
 
 void dispose_interactions(struct interazioni *interazioni)
 {
-    for(int i = 0; i < interazioni->num_interazioni; i++) {
-        free(interazioni->cat_interagenti[i]);
-    }
+    free(interazioni->cat_interagenti);
     free(interazioni);
+    interazioni = NULL;
 }
 
 struct vendita *do_record_sale(void)
@@ -990,7 +988,7 @@ struct vendita *do_record_sale(void)
 	// Run procedure
 	if(mysql_stmt_execute(record_sale) != 0) {
 		print_stmt_error(record_sale, "Could not execute record sale procedure");
-		return;
+		goto out;
 	}
 
     vendita = malloc(sizeof(*vendita));
@@ -1154,7 +1152,7 @@ struct prodotti_magazzino *do_get_stock_report(void)
 
 		strcpy(prodotti->prodotti[row].nome, nome);
         strcpy(prodotti->prodotti[row].nome_fornitore, nome_fornitore);
-        strcpy(prodotti->prodotti[row].tipo, tipo);
+        strcpy(&(prodotti->prodotti[row].tipo), &tipo);
         strcpy(prodotti->prodotti[row].categoria, categoria);
 
 		row++;
@@ -1168,9 +1166,7 @@ struct prodotti_magazzino *do_get_stock_report(void)
 
 void dispose_stock_report(struct prodotti_magazzino *prodottiMagazzino)
 {
-    for(int i = 0; i < prodottiMagazzino->num_prodotti; i++) {
-        free(prodottiMagazzino->prodotti[i]);
-    }
+    free(prodottiMagazzino->prodotti);
     free(prodottiMagazzino);
     prodottiMagazzino = NULL;
 }
@@ -1394,7 +1390,7 @@ struct fornitore *do_get_info_supplier(struct fornitore *fornitore)
     info_fornitore = malloc(sizeof(*info_fornitore));
     if(info_fornitore == NULL)
         goto out;
-    strcpy(info_fornitore->nome, fornitore->nome, strlen(fornitore->nome));
+    strcpy(info_fornitore->nome, fornitore->nome);
     info_fornitore->indirizzi = indirizzi;
     info_fornitore->recapiti = recapiti;
 
@@ -1407,6 +1403,7 @@ struct fornitore *do_get_info_supplier(struct fornitore *fornitore)
 struct prodotti_magazzino *do_get_supplier_products(struct fornitore *fornitore)
 {
     size_t row = 0;
+    int status;
     MYSQL_BIND param[6];
 
     char nome[STR_LEN];
@@ -1462,14 +1459,11 @@ struct prodotti_magazzino *do_get_supplier_products(struct fornitore *fornitore)
 
         strcpy(prodottiMagazzino->prodotti[row].nome, nome);
         strcpy(prodottiMagazzino->prodotti[row].nome_fornitore, fornitore->nome);
-        strcpy(prodottiMagazzino->prodotti[row].tipo, tipo);
+        strcpy(&(prodottiMagazzino->prodotti[row].tipo), &tipo);
         prodottiMagazzino->prodotti[row].quantita = quantita;
-        //memcpy(&(prodottiMagazzino->prodotti[row].quantita), &quantita, sizeof(quantita));
         strcpy(prodottiMagazzino->prodotti[row].categoria, categoria);
         prodottiMagazzino->prodotti[row].ricetta = ricetta;
-        //memcpy(&(prodottiMagazzino->prodotti[row].ricetta), &ricetta, sizeof(ricetta));
         prodottiMagazzino->prodotti[row].mutuabile = mutuabile;
-        //memcpy(&(prodottiMagazzino->prodotti[row].mutuabile), &mutuabile, sizeof(mutuabile));
 
         row++;
     }
@@ -1488,7 +1482,7 @@ void do_add_address(struct indirizzo *indirizzo, struct fornitore *fornitore)
 	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, indirizzo->citta, strlen(indirizzo->citta));
     set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, indirizzo->via, strlen(indirizzo->via));
     set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, indirizzo->num_civico, strlen(indirizzo->num_civico));
-    set_binding_param(&param[3], MYSQL_TYPE_TINY, &(indirizzo->fatturazione), strlen(indirizzo->fatturazione));
+    set_binding_param(&param[3], MYSQL_TYPE_TINY, &(indirizzo->fatturazione), sizeof(indirizzo->fatturazione));
     set_binding_param(&param[4], MYSQL_TYPE_VAR_STRING, fornitore->nome, strlen(fornitore->nome));
 
 	if(mysql_stmt_bind_param(add_address, param) != 0) {
@@ -1626,17 +1620,17 @@ struct scatole_in_scadenza *do_get_expiry_report(void)
 		goto out;
 	}
 
-	scatoleInScadenza = malloc(sizeof(*scatoleInScadenza) + sizeof(scatole_prodotto) * mysql_stmt_num_rows(get_expiry_report));
+	scatoleInScadenza = malloc(sizeof(*scatoleInScadenza) + sizeof(struct scatole_prodotto) * mysql_stmt_num_rows(get_expiry_report));
 	if(scatoleInScadenza == NULL)
 		goto out;
-	memset(scatoleInScadenza, 0, sizeof(*scatoleInScadenza) + sizeof(scatole_prodotto) * mysql_stmt_num_rows(get_expiry_report));
+	memset(scatoleInScadenza, 0, sizeof(*scatoleInScadenza) + sizeof(struct scatole_prodotto) * mysql_stmt_num_rows(get_expiry_report));
 	scatoleInScadenza->num_in_scadenza = mysql_stmt_num_rows(get_expiry_report);
 
     for(int i = 0; i < mysql_stmt_num_rows(get_expiry_report); i++) {
         scatoleInScadenza->scatole[i].scatole = malloc(sizeof(struct scatola));
         if(scatoleInScadenza->scatole[i].scatole == NULL)
             goto out;
-        memset(scatoleInScadenza->scatole[i].scatole, 0, sizeof(struct scatola))
+        memset(scatoleInScadenza->scatole[i].scatole, 0, sizeof(struct scatola));
         scatoleInScadenza->scatole[i].num_scatole = 1;
     }
 
@@ -1715,7 +1709,7 @@ void do_update_shelf_category(struct scaffale *scaffale)
     MYSQL_BIND param[2];
 
 	// Bind parameters
-    set_binding_param(&param[0], MYSQL_TYPE_LONG, scaffale->codice, sizeof(scaffale->codice));
+    set_binding_param(&param[0], MYSQL_TYPE_LONG, &(scaffale->codice), sizeof(scaffale->codice));
     set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, scaffale->categoria, strlen(scaffale->categoria));
 
 	if(mysql_stmt_bind_param(update_shelf_category, param) != 0) {
@@ -1788,7 +1782,7 @@ void do_add_product_to_letter(struct lettera_acquisto *letteraAcquisto, struct p
     MYSQL_BIND param[4];
 
 	// Bind parameters
-	set_binding_param(&param[0], MYSQL_TYPE_LONG, letteraAcquisto->codice, sizeof(letteraAcquisto->codice));
+	set_binding_param(&param[0], MYSQL_TYPE_LONG, &(letteraAcquisto->codice), sizeof(letteraAcquisto->codice));
 	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodottoRichiesto->nome_prodotto, strlen(prodottoRichiesto->nome_prodotto));
     set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, prodottoRichiesto->nome_fornitore, strlen(prodottoRichiesto->nome_fornitore));
     set_binding_param(&param[3], MYSQL_TYPE_LONG, &(prodottoRichiesto->quantita), sizeof(prodottoRichiesto->quantita));
@@ -1957,11 +1951,9 @@ struct lettere_inviate *do_get_letters_to_supplier(struct fornitore *fornitore)
 void dispose_letters(struct lettere_inviate *lettereInviate)
 {
     for(int i = 0; i < lettereInviate->num_lettere; i++) {
-        for(int j = 0; j < lettereInviate->lettere[i].num_richieste; j++) {
-            free(lettereInviate->lettere[i].richieste[j]);
-        }
-        free(lettereInviate->lettere[i]);
+        free(lettereInviate->lettere[i].richieste);
     }
+    free(lettereInviate->lettere);
     free(lettereInviate);
     lettereInviate = NULL;
 }
@@ -2131,17 +2123,14 @@ struct vendite *do_get_sales_on_date(char giorno[DATE_LEN])
 void dispose_sales(struct vendite *vendite)
 {
     for(int i = 0; i < vendite->num_vendite; i++) {
-        for(int j = 0; j < vendite->listaVendite[i].num_prodotti; j++) {
-            free(vendite->listaVendite[i].prod_venduti[j]);
-        }
-
-        free(vendite->listaVendite[i]);
+        free(vendite->listaVendite[i].prod_venduti);
     }
+    free(vendite->listaVendite);
     free(vendite);
     vendite = NULL;
 }
 
-static vendite *extract_product_sales(void)
+static struct vendite *extract_product_sales(void)
 {
     int status;
     size_t row = 0;
@@ -2344,9 +2333,7 @@ struct prodotti_venduti *do_get_most_sold(void)
 
 void dispose_most_sold(struct prodotti_venduti *prodottiVenduti)
 {
-    for(int i = 0; i < prodottiVenduti->num_prodotti; i++) {
-        free(prodottiVenduti->prod_venduti[i]);
-    }
+    free(prodottiVenduti->prod_venduti);
     free(prodottiVenduti);
     prodottiVenduti = NULL;
 }

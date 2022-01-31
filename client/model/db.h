@@ -102,6 +102,11 @@ struct interazioni {
 	struct interazione *cat_interagenti;
 };
 
+struct scaffale {
+    int codice;
+    char categoria[STR_LEN];
+};
+
 struct scatola {
 	int codice;
 	char scadenza[DATE_LEN];
@@ -119,11 +124,6 @@ struct scatole_prodotto {
 struct scatole_in_scadenza {
     unsigned num_in_scadenza;
     struct scatole_prodotto * scatole;
-};
-
-struct scaffale {
-	int codice;
-	char categoria[STR_LEN];
 };
 
 struct magazzino {
