@@ -31,9 +31,9 @@ enum actions {
 };
 
 extern int get_administrative_action(void);
-extern void get_product_name(struct prodotto *prod);
-extern void get_product_description(struct descrizione *descr);
-extern void print_lista_scaffali(struct magazzino *magazzino);
+extern void get_product_name_administrative(struct prodotto *prod);
+extern void get_product_description_administrative(struct descrizione *descr);
+extern void print_lista_scaffali_administrative(struct magazzino *magazzino);
 extern void get_cosmetic(struct prodotto *prod);
 extern void get_medicine(struct prodotto *prod);
 extern void print_stock_report(struct prodotti_magazzino *prodottiMagazzino);

@@ -46,7 +46,7 @@ int get_administrative_action(void)
 	return op - 1;
 }
 
-void get_product_name(struct prodotto *prod)
+void get_product_name_administrative(struct prodotto *prod)
 {
     clear_screen();
     puts("** Select a product **\n");
@@ -55,7 +55,7 @@ void get_product_name(struct prodotto *prod)
     get_input("Insert product supplier name: ", STR_LEN, prod->nome_fornitore, false);
 }
 
-void get_product_description(struct descrizione *descr)
+void get_product_description_administrative(struct descrizione *descr)
 {
     clear_screen();
     puts("** Insert product description **\n");
@@ -63,7 +63,7 @@ void get_product_description(struct descrizione *descr)
 	get_input("Insert description:\n", TXT_LEN, descr->text, false);
 }
 
-void print_lista_scaffali(struct magazzino *magazzino)
+void print_lista_scaffali_administrative(struct magazzino *magazzino)
 {
     clear_screen();
     puts("** Shelves codes and categories **\n");

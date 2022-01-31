@@ -10,11 +10,11 @@ static bool prod_description(void)
 {
     struct prodotto prod;
     memset(&prod, 0, sizeof(prod));
-    get_product_name(&prod);
+    get_product_name_administrative(&prod);
 
     struct descrizione descr;
     memset(&descr, 0, sizeof(descr));
-    get_product_description(&descr);
+    get_product_description_administrative(&descr);
 
     do_add_product_description(&prod, &descr);
 
@@ -25,7 +25,7 @@ static bool print_shelves(void)
 {
     struct magazzino *magazzino = do_get_shelves();
     if(magazzino != NULL) {
-        print_lista_scaffali(magazzino);
+        print_lista_scaffali_administrative(magazzino);
         magazzino_dispose(magazzino);
     }
 
@@ -71,7 +71,7 @@ static bool remove_product(void)
 {
     struct prodotto prod;
     memset(&prod, 0, sizeof(prod));
-    get_product_name(&prod);
+    get_product_name_administrative(&prod);
 
     do_remove_product(&prod);
 
@@ -187,7 +187,7 @@ static bool add_box(void)
 {
     struct prodotto prod;
     memset(&prod, 0, sizeof(prod));
-    get_product_name(&prod);
+    get_product_name_administrative(&prod);
 
     struct scatola scatola;
     memset(&scatola, 0, sizeof(scatola));
@@ -324,7 +324,7 @@ static bool get_sales_prod(void)
 {
     struct prodotto prod;
     memset(&prod, 0, sizeof(prod));
-    get_product_name(&prod);
+    get_product_name_administrative(&prod);
 
     struct vendite *vendite;
     vendite = do_get_product_sales(&prod);

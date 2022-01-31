@@ -27,7 +27,7 @@ int get_medical_action(void)
 	return op - '1';
 }
 
-void get_product_name(struct prodotto *prod)
+void get_product_name_medical(struct prodotto *prod)
 {
     clear_screen();
     puts("** Select a product **\n");
@@ -61,7 +61,7 @@ void show_product_info(struct prodotto *prod)
     }
 }
 
-void get_product_description(struct descrizione *descr)
+void get_product_description_medical(struct descrizione *descr)
 {
     clear_screen();
     puts("** Insert product description **\n");
@@ -96,7 +96,7 @@ void print_interacting_categories(struct interazioni *interazioni)
     }
 }
 
-void print_lista_scaffali(struct magazzino *magazzino)
+void print_lista_scaffali_medical(struct magazzino *magazzino)
 {
     clear_screen();
     puts("** Shelves codes and categories **\n");

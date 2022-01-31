@@ -10,7 +10,7 @@ static bool prod_info(void)
 {
     struct prodotto prod;
     memset(&prod, 0, sizeof(prod));
-    get_product_name(&prod);
+    get_product_name_medical(&prod);
 
     struct prodotto *info_prodotto = do_get_product_info(&prod);
     if(info_prodotto != NULL) {
@@ -24,11 +24,11 @@ static bool prod_description(void)
 {
     struct prodotto prod;
     memset(&prod, 0, sizeof(prod));
-    get_product_name(&prod);
+    get_product_name_medical(&prod);
 
     struct descrizione descr;
     memset(&descr, 0, sizeof(descr));
-    get_product_description(&descr);
+    get_product_description_medical(&descr);
 
     do_add_product_description(&prod, &descr);
 
@@ -60,7 +60,7 @@ static bool print_cats(void)
 {
     struct prodotto prod;
     memset(&prod, 0, sizeof(prod));
-    get_product_name(&prod);
+    get_product_name_medical(&prod);
 
     struct interazioni *interazioni = do_get_interacting_categories(&prod);
     if(interazioni != NULL) {
@@ -75,7 +75,7 @@ static bool print_shelves(void)
 {
     struct magazzino *magazzino = do_get_shelves();
     if(magazzino != NULL) {
-        print_lista_scaffali(magazzino);
+        print_lista_scaffali_medical(magazzino);
         magazzino_dispose(magazzino);
     }
 
@@ -97,7 +97,7 @@ static bool record_sale(void)
 
         do {
             memset(&prod, 0, sizeof(prod));
-            get_product_name(&prod);
+            get_product_name_medical(&prod);
 
             info_prodotto = do_get_product_info(&prod);
             if(info_prodotto != NULL) {
