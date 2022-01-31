@@ -61,6 +61,7 @@ static bool get_stock_report(void)
 
     if(prodottiMagazzino != NULL) {
         print_stock_report(prodottiMagazzino);
+        dispose_stock_report(prodottiMagazzino);
     }
 
     return false;
@@ -108,6 +109,7 @@ static bool get_supplier_info(void)
     fornitore = do_get_info_supplier(fornitore);
     if(fornitore != NULL) {
         print_supplier_info(fornitore);
+        free(fornitore);
     }
 
     return false;
@@ -123,6 +125,7 @@ static bool get_supplier_prod(void)
     prodottiMagazzino = do_get_supplier_products(&fornitore);
     if(prodottiMagazzino != NULL) {
         print_supplier_prod(prodottiMagazzino);
+        dispose_stock_report(prodottiMagazzino);
     }
 
     return false;
@@ -286,24 +289,63 @@ static bool send_letter(void)
     return false;
 }
 
-static bool print_letters(void)
+static bool get_supplier_letters(void)
 {
+    struct fornitore fornitore;
+    memset(&fornitore, 0, sizeof(fornitore));
+    get_supplier_name(&fornitore);
 
+    struct lettere_inviate *lettereInviate;
+    lettereInviate = do_get_letters_to_supplier(&fornitore);
+    if(lettereInviate != NULL) {
+        print_supplier_letters(lettereInviate, &fornitore);
+        dispose_letters(lettereInviate);
+    }
+
+    return false;
 }
 
-static bool print_sales_date(void)
+static bool get_sales_date(void)
 {
+    char giorno[DATE_LEN];
+    get_date(giorno);
 
+    struct vendite *vendite;
+    vendite = do_get_sales_on_date(giorno);
+    if(vendite != NULL) {
+        print_sales_on_date(vendite, giorno);
+        dispose_sales(vendite);
+    }
+
+    return false;
 }
 
-static bool print_sales_prod(void)
+static bool get_sales_prod(void)
 {
+    struct prodotto prod;
+    memset(&prod, 0, sizeof(prod));
+    get_product_name(&prod);
 
+    struct vendite *vendite;
+    vendite = do_get_product_sales(&prod);
+    if(vendite != NULL) {
+        print_sales_product(vendite, &prod);
+        dispose_sales(vendite);
+    }
+
+    return false;
 }
 
-static bool print_most_sold(void)
+static bool get_most_sold(void)
 {
+    struct prodotti_venduti *prodottiVenduti;
+    prodottiVenduti = do_get_most_sold();
+    if(prodottiVenduti != NULL) {
+        print_most_sold(prodottiVenduti);
+        dispose_most_sold(prodottiVenduti);
+    }
 
+    return false;
 }
 
 static bool quit(void)
@@ -335,14 +377,14 @@ static struct {
     {.action = ADD_SHELF, .control = add_shelf},
     {.action = UPDATE_SHELF, .control = update_shelf},
     {.action = SEND_LETTER, .control = send_letter},
-    {.action = PRINT_LETTERS, .control = print_letters},
-    {.action = PRINT_SALES_DATE, .control = print_sales_date},
-    {.action = PRINT_SALES_PROD, .control = print_sales_prod},
-    {.action = PRINT_MOST_SOLD, .control = print_most_sold},
+    {.action = GET_SUPPLIER_LETTERS, .control = get_supplier_letters},
+    {.action = GET_SALES_DATE, .control = get_sales_date},
+    {.action = GET_SALES_PROD, .control = get_sales_prod},
+    {.action = GET_MOST_SOLD, .control = get_most_sold},
 	{.action = QUIT, .control = quit}
 };
 
-void controller_medico(void)
+void administrative_controller(void)
 {
 	db_switch_to_administration();
 

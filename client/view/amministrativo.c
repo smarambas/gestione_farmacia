@@ -255,3 +255,107 @@ void get_product_for_letter(struct prodotto_richiesto *prodottoRichiesto)
     get_input("Insert supplier name: ", STR_LEN, prodottoRichiesto->nome_fornitore, false);
     prodottoRichiesto->quantita = get_int_input("Insert requested quantity: ");
 }
+
+void print_supplier_letters(struct lettere_inviate *lettereInviate, struct fornitore *fornitore)
+{
+    clear_screen();
+    puts("** Letters sent to supplier **\n");
+
+    printf("Supplier: %s\n\n", fornitore->nome);
+    for(int i = 0; i < lettereInviate->num_lettere; i++) {
+        printf("* Letter #%d (%s)\n",
+               lettereInviate->lettere[i].codice,
+               lettereInviate->lettere[i].giorno);
+
+        for(int j = 0; j < lettereInviate->lettere[i].num_richieste; j++) {
+            printf("\t- %s x %d\n",
+                   lettereInviate->lettere[i].richieste[j].nome_prodotto,
+                   lettereInviate->lettere[i].richieste[j].quantita);
+        }
+    }
+    puts("\n");
+}
+
+void get_date(char *date)
+{
+    clear_screen();
+    puts("** Select a date **\n");
+
+    while(true) {
+        get_input("Insert a valid date (YYYY-MM-DD): ", DATE_LEN, date, false);
+        if(validate_date(date))
+            break;
+        fprintf(stderr, "Invalid date!\n");
+    }
+}
+
+void print_sales_on_date(struct vendite *vendite, char *giorno)
+{
+    clear_screen();
+    puts("** Sales made on a particular date **\n");
+
+    printf("Date: %s\n\n", giorno);
+    for(int i = 0; i < vendite->num_vendite; i++) {
+        printf("* Sale #%d\n", vendite->listaVendite[i].scontrino);
+
+        for(int j = 0; j < vendite->listaVendite[i].num_prodotti; j++) {
+            printf("\t- Product: %s\n\t  Supplier: %s\n\t  Type: %c\n\t  CF: %s\n\t  Doctor: %s\n\t  Quantity: %d\n\n",
+                   vendite->listaVendite[i].prod_venduti[j].nome_prodotto,
+                   vendite->listaVendite[i].prod_venduti[j].nome_fornitore,
+                   vendite->listaVendite[i].prod_venduti[j].tipo,
+                   vendite->listaVendite[i].prod_venduti[j].tipo == 'M' ? vendite->listaVendite[i].prod_venduti[j].cf : "-",
+                   vendite->listaVendite[i].prod_venduti[j].tipo == 'M' ? vendite->listaVendite[i].prod_venduti[j].medico : "-",
+                   vendite->listaVendite[i].prod_venduti[j].quantita);
+        }
+    }
+    puts("\n");
+}
+
+void print_sales_product(struct vendite *vendite, struct prodotto *prodotto)
+{
+    clear_screen();
+    puts("** Sales including a particular product **\n");
+
+    printf("Product name: %s\nProduct supplier: %s\n\n", prodotto->nome, prodotto->nome_fornitore);
+    for(int i = 0; i < vendite->num_vendite; i++) {
+        if(vendite->listaVendite[i].prod_venduti[0].tipo == 'M') {
+            if(vendite->listaVendite[i].prod_venduti[0].ricetta) {
+                printf("* Sale #%d (%s)\n\t- CF: %s\n\t  Doctor: %s\n\t  Quantity: %d\n\n",
+                       vendite->listaVendite[i].scontrino,
+                       vendite->listaVendite[i].giorno,
+                       vendite->listaVendite[i].prod_venduti[0].cf,
+                       vendite->listaVendite[i].prod_venduti[0].medico,
+                       vendite->listaVendite[i].prod_venduti[0].quantita);
+            }
+            else {
+                printf("* Sale #%d (%s)\n\t- CF: %s\n\t  Quantity: %d\n\n",
+                       vendite->listaVendite[i].scontrino,
+                       vendite->listaVendite[i].giorno,
+                       vendite->listaVendite[i].prod_venduti[0].cf,
+                       vendite->listaVendite[i].prod_venduti[0].quantita);
+            }
+        }
+        else {
+            printf("* Sale #%d (%s)\n\t- Quantity: %d\n\n",
+                       vendite->listaVendite[i].scontrino,
+                       vendite->listaVendite[i].giorno,
+                       vendite->listaVendite[i].prod_venduti[0].quantita);
+        }
+    }
+    puts("\n");
+}
+
+void print_most_sold(struct prodotti_venduti *prodottiVenduti)
+{
+    clear_screen();
+    puts("** Most sold products **\n");
+
+    for(int i = 0; i < prodottiVenduti->num_prodotti; i++) {
+        printf("*\nProduct: %s\nSupplier: %s\nType: %c\nSold quantity: %d\n\n",
+               prodottiVenduti->prod_venduti[i].nome_prodotto,
+               prodottiVenduti->prod_venduti[i].nome_fornitore,
+               prodottiVenduti->prod_venduti[i].tipo,
+               prodottiVenduti->prod_venduti[i].quantita);
+    }
+    puts("\n");
+}

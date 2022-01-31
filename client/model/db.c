@@ -1166,6 +1166,15 @@ struct prodotti_magazzino *do_get_stock_report(void)
 	return prodotti;
 }
 
+void dispose_stock_report(struct prodotti_magazzino *prodottiMagazzino)
+{
+    for(int i = 0; i < prodottiMagazzino->num_prodotti; i++) {
+        free(prodottiMagazzino->prodotti[i]);
+    }
+    free(prodottiMagazzino);
+    prodottiMagazzino = NULL;
+}
+
 void do_remove_product(struct prodotto *prodotto)
 {
     MYSQL_BIND param[2];
@@ -1945,6 +1954,18 @@ struct lettere_inviate *do_get_letters_to_supplier(struct fornitore *fornitore)
     return lettereInviate;
 }
 
+void dispose_letters(struct lettere_inviate *lettereInviate)
+{
+    for(int i = 0; i < lettereInviate->num_lettere; i++) {
+        for(int j = 0; j < lettereInviate->lettere[i].num_richieste; j++) {
+            free(lettereInviate->lettere[i].richieste[j]);
+        }
+        free(lettereInviate->lettere[i]);
+    }
+    free(lettereInviate);
+    lettereInviate = NULL;
+}
+
 static struct vendite *extract_sales(void)
 {
     int status;
@@ -2107,6 +2128,19 @@ struct vendite *do_get_sales_on_date(char giorno[DATE_LEN])
     return vendite;
 }
 
+void dispose_sales(struct vendite *vendite)
+{
+    for(int i = 0; i < vendite->num_vendite; i++) {
+        for(int j = 0; j < vendite->listaVendite[i].num_prodotti; j++) {
+            free(vendite->listaVendite[i].prod_venduti[j]);
+        }
+
+        free(vendite->listaVendite[i]);
+    }
+    free(vendite);
+    vendite = NULL;
+}
+
 static vendite *extract_product_sales(void)
 {
     int status;
@@ -2173,11 +2207,34 @@ static vendite *extract_product_sales(void)
     return vendite;
 }
 
+static void extract_product_sales_info(char *tipo, bool *ricetta)
+{
+    int status;
+    MYSQL_BIND param[2];
+
+    set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, tipo, sizeof(*tipo));
+    set_binding_param(&param[1], MYSQL_TYPE_TINY, ricetta, sizeof(*ricetta));
+
+    if(mysql_stmt_bind_result(get_product_sales, param)) {
+        print_stmt_error(get_product_sales, "Unable to bind parameters for extract_product_sales_info\n");
+        return;
+    }
+
+    // Retrieve output parameter
+	if(mysql_stmt_fetch(get_product_sales)) {
+		print_stmt_error(get_product_sales, "Could not buffer results");
+        return;
+	}
+}
+
 struct vendite *do_get_product_sales(struct prodotto *prodotto)
 {
+    int status;
     MYSQL_BIND param[2];
 
     struct vendite *vendite = NULL;
+    char tipo;
+    bool ricetta;
 
     set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prodotto->nome, STR_LEN);
     set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodotto->nome_fornitore, STR_LEN);
@@ -2193,10 +2250,30 @@ struct vendite *do_get_product_sales(struct prodotto *prodotto)
         goto out;
     }
 
-    vendite = extract_product_sales();
-    if(vendite == NULL) {
-        print_error(conn, "Unable to extract product sales\n");
-        goto out;
+    do{
+        if(conn->server_status & SERVER_PS_OUT_PARAMS) {
+            extract_product_sales_info(&tipo, &ricetta);    //extract out parameters
+            goto next;
+		}
+        else {
+            vendite = extract_product_sales();
+            if(vendite == NULL) {
+                print_error(conn, "Unable to extract product sales\n");
+                goto out;
+            }
+            goto next;
+        }
+
+    next:
+        mysql_stmt_free_result(get_product_sales);
+        status = mysql_stmt_next_result(get_product_sales);
+		if (status > 0)
+			finish_with_stmt_error(conn, get_product_sales, "Unexpected condition", false);
+    }while(status == 0);
+
+    for(int i = 0; i < vendite->num_vendite; i++) {
+        vendite->listaVendite[i].prod_venduti[0].tipo = tipo;
+        vendite->listaVendite[i].prod_venduti[0].ricetta = ricetta;
     }
 
     out:
@@ -2265,3 +2342,11 @@ struct prodotti_venduti *do_get_most_sold(void)
 	return prodottiVenduti;
 }
 
+void dispose_most_sold(struct prodotti_venduti *prodottiVenduti)
+{
+    for(int i = 0; i < prodottiVenduti->num_prodotti; i++) {
+        free(prodottiVenduti->prod_venduti[i]);
+    }
+    free(prodottiVenduti);
+    prodottiVenduti = NULL;
+}

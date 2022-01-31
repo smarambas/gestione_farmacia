@@ -1,8 +1,8 @@
 #include <stdbool.h>
 
 #include "login.h"
-#include "amministratore.h"
-#include "agenzia.h"
+#include "medico.h"
+#include "amministrativo.h"
 #include "../view/login.h"
 #include "../model/db.h"
 
@@ -15,10 +15,10 @@ bool login(void)
 
 	switch(role) {
 		case MEDICO:
-			medico_controller();
+			medical_controller();
 			break;
 		case AMMIN:
-			ammin_controller();
+			administrative_controller();
 			break;
 		default:
 			return false;

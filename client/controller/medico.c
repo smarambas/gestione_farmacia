@@ -76,6 +76,7 @@ static bool print_shelves(void)
     struct magazzino *magazzino = do_get_shelves();
     if(magazzino != NULL) {
         print_lista_scaffali(magazzino);
+        magazzino_dispose(magazzino);
     }
 
     return false;
@@ -126,6 +127,8 @@ static bool record_sale(void)
 
             res = yes_or_no("\nDo you want to insert another product?", 'y', 'n', false, true);
         } while(res);
+
+        free(vendita);
     }
 
     return false;
@@ -150,7 +153,7 @@ static struct {
 	{.action = QUIT, .control = quit}
 };
 
-void controller_medico(void)
+void medical_controller(void)
 {
 	db_switch_to_medical();
 

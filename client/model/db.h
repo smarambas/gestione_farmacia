@@ -138,6 +138,7 @@ struct prodotto_venduto {
 	int quantita;
 	char medico[STR_LEN];
 	char cf[STR_LEN];
+    bool ricetta;
 };
 
 struct vendita {
@@ -185,6 +186,7 @@ extern struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *pr
 extern void do_add_cosmetic(struct prodotto *prodotto);
 extern void do_add_medicine(struct prodotto *prodotto);
 extern struct prodotti_magazzino *do_get_stock_report(void);
+extern void dispose_stock_report(struct prodotti_magazzino *prodottiMagazzino);
 extern void do_remove_product(struct prodotto *prodotto);
 extern void do_add_supplier(struct fornitore *fornitore);
 extern void do_remove_supplier(struct fornitore *fornitore);
@@ -202,7 +204,9 @@ extern void do_update_shelf_category(struct scaffale *scaffale);
 extern struct lettera_acquisto *do_get_purchase_letter(void);
 extern void do_add_product_to_letter(struct lettera_acquisto *letteraAcquisto, struct prodotto_richiesto *prodottoRichiesto);
 extern struct lettere_inviate *do_get_letters_to_supplier(struct fornitore *fornitore);
+extern void dispose_letters(struct lettere_inviate *lettereInviate);
 extern struct vendite *do_get_sales_on_date(char giorno[DATE_LEN]);
 extern struct vendite *do_get_product_sales(struct prodotto *prodotto);
+extern void dispose_sales(struct vendite *vendite);
 extern struct prodotti_venduti *do_get_most_sold(void);
-
+extern void dispose_most_sold(struct prodotti_venduti *prodottiVenduti);

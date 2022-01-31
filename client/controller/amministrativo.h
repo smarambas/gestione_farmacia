@@ -1,3 +1,3 @@
 #pragma once
 
-extern void controller_ammin(void);
+extern void administrative_controller(void);

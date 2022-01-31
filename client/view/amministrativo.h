@@ -22,10 +22,10 @@ enum actions {
     ADD_SHELF,
     UPDATE_SHELF,
     SEND_LETTER,
-    PRINT_LETTERS,
-    PRINT_SALES_DATE,
-    PRINT_SALES_PROD,
-    PRINT_MOST_SOLD,
+    GET_SUPPLIER_LETTERS,
+    GET_SALES_DATE,
+    GET_SALES_PROD,
+    GET_MOST_SOLD,
     QUIT,
     END_OF_ACTIONS
 };
@@ -48,4 +48,8 @@ extern void print_expiry_report(struct scatole_in_scadenza *scatoleInScadenza);
 extern void get_shelf_category(struct scaffale *scaffale);
 extern void modify_shelf_category(struct scaffale *scaffale);
 extern void get_product_for_letter(struct prodotto_richiesto *prodottoRichiesto);
-extern
+extern void print_supplier_letters(struct lettere_inviate *lettereInviate, struct fornitore *fornitore);
+extern void get_date(char *date);
+extern void print_sales_on_date(struct vendite *vendite, char *giorno);
+extern void print_sales_product(struct vendite *vendite, struct prodotto *prodotto);
+extern void print_most_sold(struct prodotti_venduti *prodottiVenduti);
