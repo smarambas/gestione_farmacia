@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "medico.h"
 #include "../utils/io.h"
@@ -6,8 +7,8 @@
 
 int get_medical_action(void)
 {
-	char options[8] = {'1','2', '3', '4', '5', '6', '7', '8'};
-	char op;
+	int options[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    int op;
 
 	clear_screen();
 	puts("*********************************");
@@ -21,10 +22,10 @@ int get_medical_action(void)
 	puts("5) Print product-interacting categories");
 	puts("6) Print shelves list");
 	puts("7) Record sale");
-	puts("8) Quit");
+	puts("8) Quit\n");
 
-	op = multi_choice("Select an option", options, 8);
-	return op - '1';
+    op = alt_multi_choice("Select an option: ", options, 8);
+	return op - 1;
 }
 
 void get_product_name_medical(struct prodotto *prod)
@@ -41,24 +42,44 @@ void show_product_info(struct prodotto *prod)
     clear_screen();
     puts("** Product info **\n");
 
-    if(prod->tipo == 'M') {
-        printf("\nProduct name: %s\nSupplier: %s\nType: %c\nCategory: %s\nNeeds prescription: %s\nMutuabile: %s\nIn stock: %d\n",
-               prod->nome,
-               prod->nome_fornitore,
-               prod->tipo,
-               prod->categoria,
-               prod->ricetta ? "yes" : "no",
-               prod->mutuabile ? "yes" : "no",
-               prod->quantita);
-        printf("Usage: \n");
-        for(int i = 0; i < prod->num_usi; i++) {
-            printf("%d) %s\n", i, prod->usi[i].text);
+    if(prod != NULL) {
+        if (prod->tipo == 'M') {
+            printf("\nProduct name: %s\nSupplier: %s\nType: %s\nCategory: %s\nNeeds prescription: %s\nMutuabile: %s\nIn stock: %d\n",
+                   prod->nome,
+                   prod->nome_fornitore,
+                   "Medicinale",
+                   prod->categoria,
+                   prod->ricetta ? "yes" : "no",
+                   prod->mutuabile ? "yes" : "no",
+                   prod->quantita);
+            printf("Usage: ");
+            for (int i = 0; i < prod->num_usi; i++) {
+                if (strlen(prod->usi[i].text) > 1)
+                    printf("\n\t%d) %s\n", i + 1, prod->usi[i].text);
+                else {
+                    printf("-\n");
+                    break;
+                }
+            }
+        } else {
+            printf("\nProduct name: %s\nSupplier: %s\nType: %s\nIn stock: %d\n",
+                   prod->nome,
+                   prod->nome_fornitore,
+                   "Cosmetico",
+                   prod->quantita);
+            printf("Usage: ");
+            for (int i = 0; i < prod->num_usi; i++) {
+                if (strlen(prod->usi[i].text) > 1)
+                    printf("\n\t%d) %s\n", i + 1, prod->usi[i].text);
+                else {
+                    printf("-\n");
+                    break;
+                }
+            }
         }
     }
-    else {
-        printf("\nProduct name: %s\nSupplier: %s\nType: %c\nIn stock: %d\n",
-               prod->nome, prod->nome_fornitore, prod->tipo, prod->quantita);
-    }
+    else
+        puts("The selected product doesn't exist\n");
 }
 
 void get_product_description_medical(struct descrizione *descr)
@@ -91,9 +112,13 @@ void print_interacting_categories(struct interazioni *interazioni)
     clear_screen();
     puts("** Product-interacting categories **\n");
 
-    for(int i = 0; i < interazioni->num_interazioni; i++) {
-        printf("%s <----> %s\n", interazioni->cat_interagenti[i].cat1, interazioni->cat_interagenti[i].cat2);
+    if(interazioni != NULL) {
+        for (int i = 0; i < interazioni->num_interazioni; i++) {
+            printf("%s <----> %s\n", interazioni->cat_interagenti[i].cat1, interazioni->cat_interagenti[i].cat2);
+        }
     }
+    else
+        puts("No interaction exists with the selected medicine.\n");
 }
 
 void print_lista_scaffali_medical(struct magazzino *magazzino)
@@ -114,7 +139,21 @@ void get_sold_product_info(struct prodotto_venduto *prod)
     prod->quantita = get_int_input("Insert sold quantity: ");
     if(prod->tipo == 'M') {
         get_input("Insert codice fiscale: ", STR_LEN, prod->cf, false);
-        get_input("Insert doctor: ", STR_LEN, prod->medico, false);
+        if(prod->ricetta)
+            while(true) {
+                get_input("Insert doctor: ", STR_LEN, prod->medico, false);
+
+                if(strlen(prod->medico) < 1)
+                    puts("\nDoctor field can't be empty!\n");
+                else
+                    break;
+            }
+        else
+            strcpy(prod->medico, "");
+    }
+    else {
+        strcpy(prod->cf, "");
+        strcpy(prod->medico, "");
     }
 }
 
@@ -129,7 +168,23 @@ void print_boxes_codes(struct scatole_prodotto *scatoleProdotto)
     puts("\n");
 }
 
-void select_box_to_remove(struct scatola *box)
+void select_box_to_remove(struct scatola *box, struct scatole_prodotto *scatoleProdotto)
 {
-    box->codice = get_int_input("Select box: ");
+    int code;
+    bool is_end = false;
+
+    while(!is_end) {
+        code = get_int_input("Select box: ");
+
+        for(int i = 0; i < scatoleProdotto->num_scatole; i++) {
+            if(code == scatoleProdotto->scatole[i].codice) {
+                box->codice = code;
+                is_end = true;
+                break;
+            }
+        }
+
+        if(!is_end)
+            puts("The selected box can't be removed, please try again...\n");
+    }
 }

@@ -260,7 +260,7 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(add_box, "Unable to initialize add box statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&get_expiry_report, "call genera_report_scandenze()", conn)) {
+			if(!setup_prepared_stmt(&get_expiry_report, "call genera_report_scadenze()", conn)) {
 				print_stmt_error(get_expiry_report, "Unable to initialize get expiry report statement\n");
 				return false;
 			}
@@ -552,12 +552,19 @@ struct magazzino *do_get_shelves(void)
 	}
 	
 	mysql_stmt_store_result(get_shelves);
-	
-	magazzino = malloc(sizeof(*magazzino) + sizeof(struct scaffale) * mysql_stmt_num_rows(get_shelves));
-	if(magazzino == NULL)
+
+    if(mysql_stmt_num_rows(get_shelves) == 0)
+        goto out;
+
+    magazzino = malloc(sizeof(*magazzino));
+    if(magazzino == NULL)
 		goto out;
-	memset(magazzino, 0, sizeof(*magazzino) + sizeof(struct scaffale) * mysql_stmt_num_rows(get_shelves));
-	magazzino->num_scaffali = mysql_stmt_num_rows(get_shelves);
+    memset(magazzino, 0, sizeof(*magazzino));
+    magazzino->num_scaffali = mysql_stmt_num_rows(get_shelves);
+
+    magazzino->scaffali = malloc(sizeof(struct scaffale) * mysql_stmt_num_rows(get_shelves));
+    if(magazzino->scaffali == NULL)
+        goto out;
 	
 	// Get bound parameters
 	mysql_stmt_store_result(get_shelves);
@@ -627,11 +634,19 @@ struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
 
 	mysql_stmt_store_result(get_product_boxes);
 
-    scatoleProdotto = malloc(sizeof(*scatoleProdotto) + sizeof(struct scatola) * mysql_stmt_num_rows(get_product_boxes));
+    scatoleProdotto = malloc(sizeof(*scatoleProdotto));
     if(scatoleProdotto == NULL)
 		goto out;
-    memset(scatoleProdotto, 0, sizeof(*scatoleProdotto) + sizeof(struct scatola) * mysql_stmt_num_rows(get_product_boxes));
+    memset(scatoleProdotto, 0, sizeof(*scatoleProdotto));
     scatoleProdotto->num_scatole = mysql_stmt_num_rows(get_product_boxes);
+
+    scatoleProdotto->scatole = malloc(sizeof(struct scatola) * mysql_stmt_num_rows(get_product_boxes));
+    if(scatoleProdotto->scatole == NULL) {
+        free(scatoleProdotto);
+        scatoleProdotto = NULL;
+        goto out;
+    }
+    memset(scatoleProdotto->scatole, 0, sizeof(struct scatola) * mysql_stmt_num_rows(get_product_boxes));
 
 	// Prepare output parameters
 	set_binding_param(&param[0], MYSQL_TYPE_LONG, &codice, sizeof(codice));
@@ -790,7 +805,7 @@ struct prodotto *do_get_product_info(struct prodotto *prod)
 	
 	struct prodotto *prodotto = NULL;
 
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prod->nome, strlen(prod->nome));
+    set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prod->nome, strlen(prod->nome));
 	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prod->nome_fornitore, strlen(prod->nome_fornitore));
 	
 	if(mysql_stmt_bind_param(get_product_info, param)) {
@@ -805,6 +820,9 @@ struct prodotto *do_get_product_info(struct prodotto *prod)
 	}
 	
 	mysql_stmt_store_result(get_product_info);
+
+    if(mysql_stmt_num_rows(get_product_info) == 0)
+        goto out;
 	
 	prodotto = malloc(sizeof(*prodotto));
 	if(prodotto == NULL)
@@ -846,11 +864,22 @@ struct prodotto *do_get_product_info(struct prodotto *prod)
 			strcpy(prodotto->nome_fornitore, nome_fornitore);
 			strcpy(&(prodotto->tipo), &tipo);
 			prodotto->quantita = quantita;
-			strcpy(prodotto->categoria, categoria);
+
+            if(param[4].is_null)
+			    strcpy(prodotto->categoria, "");
+            else
+                strcpy(prodotto->categoria, categoria);
+
+            printf("\nHello there\n");
+
 			prodotto->ricetta = ricetta;
 			prodotto->mutuabile = mutuabile;
 		}
-		strcpy(prodotto->usi[row].text, descrizione);
+
+        if(param[7].is_null)
+		    strcpy(prodotto->usi[row].text, "");
+        else
+            strcpy(prodotto->usi[row].text, descrizione);
 		
 		row++;
 	}
@@ -933,11 +962,21 @@ struct interazioni *do_get_interacting_categories(struct prodotto *prod)
 
 	mysql_stmt_store_result(get_interacting_categories);
 
-    interazioni = malloc(sizeof(*interazioni) + sizeof(struct interazione) * mysql_stmt_num_rows(get_interacting_categories));
+    if(mysql_stmt_num_rows(get_interacting_categories) == 0)
+        goto out;
+
+    interazioni = malloc(sizeof(*interazioni));
     if(interazioni == NULL)
         goto out;
-    memset(interazioni, 0, sizeof(*interazioni) + sizeof(struct interazione) * mysql_stmt_num_rows(get_interacting_categories));
-	interazioni->num_interazioni = mysql_stmt_num_rows(get_interacting_categories);
+    memset(interazioni, 0, sizeof(*interazioni));
+    interazioni->num_interazioni = mysql_stmt_num_rows(get_interacting_categories);
+
+    interazioni->cat_interagenti = malloc(sizeof(struct interazione) * mysql_stmt_num_rows(get_interacting_categories));
+    if(interazioni->cat_interagenti == NULL){
+        free(interazioni);
+        interazioni = NULL;
+        goto out;
+    }
 
     // Prepare output parameters
 	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, cat1, STR_LEN);
@@ -996,9 +1035,6 @@ struct vendita *do_record_sale(void)
         goto out;
     memset(vendita, 0, sizeof(*vendita));
 
-    // Get bound parameters
-    mysql_stmt_store_result(record_sale);
-
     set_binding_param(&param[0], MYSQL_TYPE_LONG, &scontrino, sizeof(scontrino));
     set_binding_param(&param[1], MYSQL_TYPE_DATE, &giorno, sizeof(giorno));
 
@@ -1011,6 +1047,8 @@ struct vendita *do_record_sale(void)
 
     if (mysql_stmt_store_result(record_sale)) {
 		print_stmt_error(record_sale, "Unable to store record_sale result set.");
+        free(vendita);
+        vendita = NULL;
 		goto out;
 	}
 
@@ -1021,7 +1059,6 @@ struct vendita *do_record_sale(void)
             break;
 
         vendita->scontrino = scontrino;
-        //memcpy(&(vendita->scontrino), &scontrino, sizeof(scontrino));
         mysql_date_to_string(&giorno, vendita->giorno);
     }
 
@@ -1037,7 +1074,7 @@ void do_add_product_to_sale(struct vendita *vendita, struct prodotto_venduto *pr
 
 	// Bind parameters
 	set_binding_param(&param[0], MYSQL_TYPE_LONG, &(vendita->scontrino), sizeof(vendita->scontrino));
-	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodottoVenduto->nome_prodotto, strlen(prodottoVenduto->nome_prodotto));
+    set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodottoVenduto->nome_prodotto, strlen(prodottoVenduto->nome_prodotto));
     set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, prodottoVenduto->nome_fornitore, strlen(prodottoVenduto->nome_fornitore));
     set_binding_param(&param[3], MYSQL_TYPE_LONG, &(prodottoVenduto->quantita), sizeof(prodottoVenduto->quantita));
 	set_binding_param(&param[4], MYSQL_TYPE_VAR_STRING, prodottoVenduto->cf, strlen(prodottoVenduto->cf));
@@ -1113,7 +1150,7 @@ struct prodotti_magazzino *do_get_stock_report(void)
 	char nome[STR_LEN];
     char nome_fornitore[STR_LEN];
     char tipo;
-	char categoria[STR_LEN];
+	int quantita;
 
 	struct prodotti_magazzino *prodotti = NULL;
 
@@ -1123,19 +1160,27 @@ struct prodotti_magazzino *do_get_stock_report(void)
 		goto out;
 	}
 
-	prodotti = malloc(sizeof(*prodotti) + sizeof(struct prodotto) * mysql_stmt_num_rows(get_stock_report));
-	if(prodotti == NULL)
-		goto out;
-	memset(prodotti, 0, sizeof(*prodotti) + sizeof(struct prodotto) * mysql_stmt_num_rows(get_stock_report));
-	prodotti->num_prodotti = mysql_stmt_num_rows(get_stock_report);
-
 	// Get bound parameters
 	mysql_stmt_store_result(get_stock_report);
+
+    prodotti = malloc(sizeof(*prodotti));
+    if(prodotti == NULL)
+        goto out;
+    memset(prodotti, 0, sizeof(*prodotti));
+    prodotti->num_prodotti = mysql_stmt_num_rows(get_stock_report);
+
+    prodotti->prodotti = malloc(sizeof(struct prodotto) * mysql_stmt_num_rows(get_stock_report));
+    if(prodotti->prodotti == NULL) {
+        free(prodotti);
+        prodotti = NULL;
+        goto out;
+    }
+    memset(prodotti->prodotti, 0, sizeof(struct prodotto) * mysql_stmt_num_rows(get_stock_report));
 
 	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome, STR_LEN);
 	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, nome_fornitore, STR_LEN);
     set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, &tipo, sizeof(tipo));
-	set_binding_param(&param[3], MYSQL_TYPE_VAR_STRING, categoria, STR_LEN);
+	set_binding_param(&param[3], MYSQL_TYPE_LONG, &quantita, sizeof(quantita));
 
 	if(mysql_stmt_bind_result(get_stock_report, param)) {
 		print_stmt_error(get_stock_report, "Unable to bind output parameters for get stock report\n");
@@ -1153,7 +1198,7 @@ struct prodotti_magazzino *do_get_stock_report(void)
 		strcpy(prodotti->prodotti[row].nome, nome);
         strcpy(prodotti->prodotti[row].nome_fornitore, nome_fornitore);
         strcpy(&(prodotti->prodotti[row].tipo), &tipo);
-        strcpy(prodotti->prodotti[row].categoria, categoria);
+        prodotti->prodotti[row].quantita = quantita;
 
 		row++;
 	}
@@ -1461,7 +1506,12 @@ struct prodotti_magazzino *do_get_supplier_products(struct fornitore *fornitore)
         strcpy(prodottiMagazzino->prodotti[row].nome_fornitore, fornitore->nome);
         strcpy(&(prodottiMagazzino->prodotti[row].tipo), &tipo);
         prodottiMagazzino->prodotti[row].quantita = quantita;
-        strcpy(prodottiMagazzino->prodotti[row].categoria, categoria);
+
+        if(param[3].is_null)
+            strcpy(prodottiMagazzino->prodotti[row].categoria, "");
+        else
+            strcpy(prodottiMagazzino->prodotti[row].categoria, categoria);
+
         prodottiMagazzino->prodotti[row].ricetta = ricetta;
         prodottiMagazzino->prodotti[row].mutuabile = mutuabile;
 
@@ -2065,8 +2115,16 @@ static struct vendite *extract_sales(void)
             strcpy(vendite->listaVendite[sale].prod_venduti[i].nome_fornitore, nome_fornitore);
             strcpy(&(vendite->listaVendite[sale].prod_venduti[i].tipo), &tipo);
             vendite->listaVendite[sale].prod_venduti[i].quantita = quantita;
-            strcpy(vendite->listaVendite[sale].prod_venduti[i].cf, cf);
-            strcpy(vendite->listaVendite[sale].prod_venduti[i].medico, medico);
+
+            if(param[5].is_null)
+                strcpy(vendite->listaVendite[sale].prod_venduti[i].cf, "");
+            else
+                strcpy(vendite->listaVendite[sale].prod_venduti[i].cf, cf);
+
+            if(param[6].is_null)
+                strcpy(vendite->listaVendite[sale].prod_venduti[i].medico, "");
+            else
+                strcpy(vendite->listaVendite[sale].prod_venduti[i].medico, medico);
 
             sale++;
         }
@@ -2075,8 +2133,16 @@ static struct vendite *extract_sales(void)
             strcpy(vendite->listaVendite[sale].prod_venduti[i].nome_fornitore, nome_fornitore);
             strcpy(&(vendite->listaVendite[sale].prod_venduti[i].tipo), &tipo);
             vendite->listaVendite[sale].prod_venduti[i].quantita = quantita;
-            strcpy(vendite->listaVendite[sale].prod_venduti[i].cf, cf);
-            strcpy(vendite->listaVendite[sale].prod_venduti[i].medico, medico);
+
+            if(param[5].is_null)
+                strcpy(vendite->listaVendite[sale].prod_venduti[i].cf, "");
+            else
+                strcpy(vendite->listaVendite[sale].prod_venduti[i].cf, cf);
+
+            if(param[6].is_null)
+                strcpy(vendite->listaVendite[sale].prod_venduti[i].medico, "");
+            else
+                strcpy(vendite->listaVendite[sale].prod_venduti[i].medico, medico);
         }
 
         i++;
@@ -2186,8 +2252,16 @@ static struct vendite *extract_product_sales(void)
         vendite->listaVendite[row].scontrino = scontrino;
         mysql_date_to_string(&giorno, vendite->listaVendite[row].giorno);
         vendite->listaVendite[row].prod_venduti[0].quantita = quantita;
-        strcpy(vendite->listaVendite[row].prod_venduti[0].cf, cf);
-        strcpy(vendite->listaVendite[row].prod_venduti[0].medico, medico);
+
+        if(param[3].is_null)
+            strcpy(vendite->listaVendite[row].prod_venduti[0].cf, "");
+        else
+            strcpy(vendite->listaVendite[row].prod_venduti[0].cf, cf);
+
+        if(param[4].is_null)
+            strcpy(vendite->listaVendite[row].prod_venduti[0].medico, "");
+        else
+            strcpy(vendite->listaVendite[row].prod_venduti[0].medico, medico);
 
         row++;
     }

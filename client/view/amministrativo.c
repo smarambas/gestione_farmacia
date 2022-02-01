@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "amministrativo.h"
 #include "../utils/io.h"
@@ -40,7 +41,7 @@ int get_administrative_action(void)
     puts("22) Print sales made on a given date");
     puts("23) Print sales including a product");
     puts("24) Print most sold products list");
-	puts("25) Quit");
+	puts("25) Quit\n");
 
 	op = alt_multi_choice("Select an option: ", options, 25);
 	return op - 1;
@@ -100,10 +101,9 @@ void print_stock_report(struct prodotti_magazzino *prodottiMagazzino)
     puts("** Stock report **\n");
 
     for(int i = 0; i < prodottiMagazzino->num_prodotti; i++) {
-        printf("* %s (%s) Type: %c ---> In stock: %d\n",
+        printf("* %s (%s) \n---> In stock: %d\n\n",
                 prodottiMagazzino->prodotti[i].nome,
                 prodottiMagazzino->prodotti[i].nome_fornitore,
-                prodottiMagazzino->prodotti[i].tipo,
                 prodottiMagazzino->prodotti[i].quantita);
     }
     puts("\n");
@@ -152,9 +152,9 @@ void print_supplier_prod(struct prodotti_magazzino *prodottiMagazzino)
     printf("Supplier: %s\n\n", prodottiMagazzino->prodotti[0].nome_fornitore);
 
     for(int i = 0; i < prodottiMagazzino->num_prodotti; i++) {
-        printf("* Product name: %s\nType: %c\nCategory: %s\nNeeds prescription: %s\nMutuabile: %s\nIn stock: %d\n\n",
+        printf("* Product name: %s\nType: %s\nCategory: %s\nNeeds prescription: %s\nMutuabile: %s\nIn stock: %d\n\n",
                prodottiMagazzino->prodotti[i].nome,
-               prodottiMagazzino->prodotti[i].tipo,
+               prodottiMagazzino->prodotti[i].tipo == 'M' ? "Medicinale" : "Cosmetico",
                prodottiMagazzino->prodotti[i].categoria,
                prodottiMagazzino->prodotti[i].ricetta ? "yes" : "no",
                prodottiMagazzino->prodotti[i].mutuabile ? "yes" : "no",
@@ -299,12 +299,12 @@ void print_sales_on_date(struct vendite *vendite, char *giorno)
         printf("* Sale #%d\n", vendite->listaVendite[i].scontrino);
 
         for(int j = 0; j < vendite->listaVendite[i].num_prodotti; j++) {
-            printf("\t- Product: %s\n\t  Supplier: %s\n\t  Type: %c\n\t  CF: %s\n\t  Doctor: %s\n\t  Quantity: %d\n\n",
+            printf("\t- Product: %s\n\t  Supplier: %s\n\t  Type: %s\n\t  CF: %s\n\t  Doctor: %s\n\t  Quantity: %d\n\n",
                    vendite->listaVendite[i].prod_venduti[j].nome_prodotto,
                    vendite->listaVendite[i].prod_venduti[j].nome_fornitore,
-                   vendite->listaVendite[i].prod_venduti[j].tipo,
-                   vendite->listaVendite[i].prod_venduti[j].tipo == 'M' ? vendite->listaVendite[i].prod_venduti[j].cf : "-",
-                   vendite->listaVendite[i].prod_venduti[j].tipo == 'M' ? vendite->listaVendite[i].prod_venduti[j].medico : "-",
+                   vendite->listaVendite[i].prod_venduti[j].tipo == 'M' ? "Medicinale" : "Cosmetico",
+                   strlen(vendite->listaVendite[i].prod_venduti[j].cf) > 1 ? vendite->listaVendite[i].prod_venduti[j].cf : "-",
+                   strlen(vendite->listaVendite[i].prod_venduti[j].medico) > 1 ? vendite->listaVendite[i].prod_venduti[j].medico : "-",
                    vendite->listaVendite[i].prod_venduti[j].quantita);
         }
     }
@@ -351,10 +351,10 @@ void print_most_sold(struct prodotti_venduti *prodottiVenduti)
     puts("** Most sold products **\n");
 
     for(int i = 0; i < prodottiVenduti->num_prodotti; i++) {
-        printf("*\nProduct: %s\nSupplier: %s\nType: %c\nSold quantity: %d\n\n",
+        printf("*\nProduct: %s\nSupplier: %s\nType: %s\nSold quantity: %d\n\n",
                prodottiVenduti->prod_venduti[i].nome_prodotto,
                prodottiVenduti->prod_venduti[i].nome_fornitore,
-               prodottiVenduti->prod_venduti[i].tipo,
+               prodottiVenduti->prod_venduti[i].tipo == 'M' ? "Medicinale" : "Cosmetico",
                prodottiVenduti->prod_venduti[i].quantita);
     }
     puts("\n");

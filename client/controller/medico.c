@@ -13,10 +13,10 @@ static bool prod_info(void)
     get_product_name_medical(&prod);
 
     struct prodotto *info_prodotto = do_get_product_info(&prod);
-    if(info_prodotto != NULL) {
-        show_product_info(info_prodotto);
-        free(info_prodotto);
-    }
+
+    show_product_info(info_prodotto);
+    free(info_prodotto);
+
     return false;
 }
 
@@ -63,10 +63,10 @@ static bool print_cats(void)
     get_product_name_medical(&prod);
 
     struct interazioni *interazioni = do_get_interacting_categories(&prod);
-    if(interazioni != NULL) {
-        print_interacting_categories(interazioni);
+    print_interacting_categories(interazioni);
+
+    if(interazioni != NULL)
         dispose_interactions(interazioni);
-    }
 
     return false;
 }
@@ -105,6 +105,7 @@ static bool record_sale(void)
                 strcpy(prodottoVenduto.nome_prodotto, info_prodotto->nome);
                 strcpy(prodottoVenduto.nome_fornitore, info_prodotto->nome_fornitore);
                 strcpy(&(prodottoVenduto.tipo), &(info_prodotto->tipo));
+                prodottoVenduto.ricetta = info_prodotto->ricetta;
 
                 get_sold_product_info(&prodottoVenduto);
                 do_add_product_to_sale(vendita, &prodottoVenduto);
@@ -114,15 +115,24 @@ static bool record_sale(void)
                     if (scatoleProdotto != NULL) {
                         print_boxes_codes(scatoleProdotto);
 
-                        do {
-                            select_box_to_remove(&box);
+                        if(prodottoVenduto.quantita > 1) {
+                            do {
+                                select_box_to_remove(&box, scatoleProdotto);
+                                do_remove_box(&box);    //I'm not interested in the result set here
+                            } while(yes_or_no("\nDo you want to remove another box?", 'y', 'n', false, true));
+                        }
+                        else {
+                            select_box_to_remove(&box, scatoleProdotto);
                             do_remove_box(&box);    //I'm not interested in the result set here
-                        } while(yes_or_no("\nDo you want to remove another box?", 'y', 'n', false, true));
+                        }
                     }
                 }
 
                 free(info_prodotto);
                 info_prodotto = NULL;
+            }
+            else {
+                puts("Invalid product...\n");
             }
 
             res = yes_or_no("\nDo you want to insert another product?", 'y', 'n', false, true);
