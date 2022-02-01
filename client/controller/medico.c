@@ -144,6 +144,18 @@ static bool record_sale(void)
     return false;
 }
 
+static bool prod_list(void)
+{
+    struct prodotti *prodotti;
+    prodotti = do_get_products_list();
+    if(prodotti != NULL) {
+        print_products_list_medical(prodotti);
+        dispose_products_list(prodotti);
+    }
+
+    return false;
+}
+
 static bool quit(void)
 {
 	return true;
@@ -160,6 +172,7 @@ static struct {
     {.action = PRINT_CATS, .control = print_cats},
     {.action = PRINT_SHELVES, .control = print_shelves},
     {.action = RECORD_SALE, .control = record_sale},
+    {.action = PROD_LIST, .control = prod_list},
 	{.action = QUIT, .control = quit}
 };
 

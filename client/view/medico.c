@@ -7,7 +7,7 @@
 
 int get_medical_action(void)
 {
-	int options[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+	int options[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     int op;
 
 	clear_screen();
@@ -22,9 +22,10 @@ int get_medical_action(void)
 	puts("5) Print product-interacting categories");
 	puts("6) Print shelves list");
 	puts("7) Record sale");
-	puts("8) Quit\n");
+    puts("8) Print products list");
+	puts("9) Quit\n");
 
-    op = alt_multi_choice("Select an option: ", options, 8);
+    op = alt_multi_choice("Select an option: ", options, 9);
 	return op - 1;
 }
 
@@ -187,4 +188,17 @@ void select_box_to_remove(struct scatola *box, struct scatole_prodotto *scatoleP
         if(!is_end)
             puts("The selected box can't be removed, please try again...\n");
     }
+}
+
+void print_products_list_medical(struct prodotti *prodotti)
+{
+    clear_screen();
+    puts("** Products list **\n");
+
+    for(int i = 0; i < prodotti->num_prodotti; i++) {
+        printf("* %s (%s)\n",
+               prodotti->lista_prodotti[i].nome,
+               prodotti->lista_prodotti[i].nome_fornitore);
+    }
+    puts("\n");
 }

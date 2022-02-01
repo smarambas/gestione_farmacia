@@ -127,6 +127,8 @@ static bool get_supplier_prod(void)
         print_supplier_prod(prodottiMagazzino);
         dispose_stock_report(prodottiMagazzino);
     }
+    else
+        puts("Selected supplier does not exist!\n");
 
     return false;
 }
@@ -348,6 +350,18 @@ static bool get_most_sold(void)
     return false;
 }
 
+static bool prod_list(void)
+{
+    struct prodotti *prodotti;
+    prodotti = do_get_products_list();
+    if(prodotti != NULL) {
+        print_products_list_administrative(prodotti);
+        dispose_products_list(prodotti);
+    }
+
+    return false;
+}
+
 static bool quit(void)
 {
 	return true;
@@ -381,6 +395,7 @@ static struct {
     {.action = GET_SALES_DATE, .control = get_sales_date},
     {.action = GET_SALES_PROD, .control = get_sales_prod},
     {.action = GET_MOST_SOLD, .control = get_most_sold},
+    {.action = PROD_LIST, .control = prod_list},
 	{.action = QUIT, .control = quit}
 };
 

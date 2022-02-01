@@ -17,6 +17,7 @@ static MYSQL_STMT *get_shelves;
 static MYSQL_STMT *remove_box;
 static MYSQL_STMT *update_stock;
 static MYSQL_STMT *decrease_stock;
+static MYSQL_STMT *get_products_list;
 
 //medical procedures
 static MYSQL_STMT *get_product_info;
@@ -82,6 +83,10 @@ static void close_prepared_stmts(void)
 		mysql_stmt_close(decrease_stock);
 		decrease_stock = NULL;
 	}
+    if(get_products_list) {
+        mysql_stmt_close(get_products_list);
+		get_products_list = NULL;
+    }
 	if(get_product_info) {
 		mysql_stmt_close(get_product_info);
 		get_product_info = NULL;
@@ -288,7 +293,7 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(get_sales_on_date, "Unable to initialize get sales on date statement\n");
 				return false;
 			}
-			if(!setup_prepared_stmt(&get_product_sales, "call vendite_prodotto(?, ?)", conn)) {
+			if(!setup_prepared_stmt(&get_product_sales, "call vendite_prodotto(?, ?, ?, ?)", conn)) {
 				print_stmt_error(get_product_sales, "Unable to initialize get product sales statement\n");
 				return false;
 			}
@@ -318,6 +323,10 @@ static bool initialize_prepared_stmts(role_t for_role)
 			}
             if(!setup_prepared_stmt(&decrease_stock, "call decrementa_giacenza(?, ?)", conn)) {
 				print_stmt_error(decrease_stock, "Unable to initialize decrease stock statement\n");
+				return false;
+			}
+            if(!setup_prepared_stmt(&get_products_list, "call lista_prodotti()", conn)) {
+				print_stmt_error(get_products_list, "Unable to initialize get products list statement\n");
 				return false;
 			}
 			break;
@@ -370,6 +379,10 @@ static bool initialize_prepared_stmts(role_t for_role)
 				print_stmt_error(decrease_stock, "Unable to initialize decrease stock statement\n");
 				return false;
 			}
+            if(!setup_prepared_stmt(&get_products_list, "call lista_prodotti()", conn)) {
+                print_stmt_error(get_products_list, "Unable to initialize get products list statement\n");
+                return false;
+            }
 			break;
 		default:
 			fprintf(stderr, "[FATAL] Unexpected role to prepare statements.\n");
@@ -551,34 +564,35 @@ struct magazzino *do_get_shelves(void)
 		goto out;
 	}
 	
-	mysql_stmt_store_result(get_shelves);
+	set_binding_param(&param[0], MYSQL_TYPE_LONG, &codice, sizeof(codice));
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, categoria, STR_LEN);
+	
+	if(mysql_stmt_bind_result(get_shelves, param)) {
+		print_stmt_error(get_shelves, "Unable to bind output parameters for get shelves\n");
+		goto out;
+	}
+
+    if(mysql_stmt_store_result(get_shelves)) {
+        print_stmt_error(get_shelves, "Unable to store get shelves result set.");
+        goto out;
+    }
 
     if(mysql_stmt_num_rows(get_shelves) == 0)
         goto out;
 
     magazzino = malloc(sizeof(*magazzino));
     if(magazzino == NULL)
-		goto out;
+        goto out;
     memset(magazzino, 0, sizeof(*magazzino));
     magazzino->num_scaffali = mysql_stmt_num_rows(get_shelves);
 
     magazzino->scaffali = malloc(sizeof(struct scaffale) * mysql_stmt_num_rows(get_shelves));
-    if(magazzino->scaffali == NULL)
+    if(magazzino->scaffali == NULL) {
+        free(magazzino);
+        magazzino = NULL;
         goto out;
-	
-	// Get bound parameters
-	mysql_stmt_store_result(get_shelves);
-	
-	set_binding_param(&param[0], MYSQL_TYPE_LONG, &codice, sizeof(codice));
-	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, categoria, STR_LEN);
-	
-	if(mysql_stmt_bind_result(get_shelves, param)) {
-		print_stmt_error(get_shelves, "Unable to bind output parameters for get shelves\n");
-		free(magazzino);
-		magazzino = NULL;
-		goto out;
-	}
-	
+    }
+
 	while (true) {
 		status = mysql_stmt_fetch(get_shelves);
 
@@ -632,11 +646,24 @@ struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
 		goto out;
 	}
 
-	mysql_stmt_store_result(get_product_boxes);
+	// Prepare output parameters
+	set_binding_param(&param[0], MYSQL_TYPE_LONG, &codice, sizeof(codice));
+	set_binding_param(&param[1], MYSQL_TYPE_LONG, &cassetto, sizeof(cassetto));
+	set_binding_param(&param[2], MYSQL_TYPE_LONG, &scaffale, sizeof(scaffale));
+
+	if(mysql_stmt_bind_result(get_product_boxes, param)) {
+		print_stmt_error(get_product_boxes, "Unable to bind output parameters for get product boxes\n");
+		goto out;
+	}
+
+    if(mysql_stmt_store_result(get_product_boxes)) {
+        print_stmt_error(get_product_boxes, "Unable to store get_product_boxes result set.");
+        goto out;
+    }
 
     scatoleProdotto = malloc(sizeof(*scatoleProdotto));
     if(scatoleProdotto == NULL)
-		goto out;
+        goto out;
     memset(scatoleProdotto, 0, sizeof(*scatoleProdotto));
     scatoleProdotto->num_scatole = mysql_stmt_num_rows(get_product_boxes);
 
@@ -647,18 +674,6 @@ struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
         goto out;
     }
     memset(scatoleProdotto->scatole, 0, sizeof(struct scatola) * mysql_stmt_num_rows(get_product_boxes));
-
-	// Prepare output parameters
-	set_binding_param(&param[0], MYSQL_TYPE_LONG, &codice, sizeof(codice));
-	set_binding_param(&param[1], MYSQL_TYPE_LONG, &cassetto, sizeof(cassetto));
-	set_binding_param(&param[2], MYSQL_TYPE_LONG, &scaffale, sizeof(scaffale));
-
-	if(mysql_stmt_bind_result(get_product_boxes, param)) {
-		print_stmt_error(get_product_boxes, "Unable to bind output parameters for get product boxes\n");
-		free(scatoleProdotto);
-		scatoleProdotto = NULL;
-		goto out;
-	}
 
     strcpy(scatoleProdotto->nome_prodotto, prod->nome_prodotto);
     strcpy(scatoleProdotto->nome_fornitore, prod->nome_fornitore);
@@ -706,24 +721,25 @@ struct prodotto *do_remove_box(struct scatola *box)
 		goto out;
 	}
 
-    mysql_stmt_store_result(remove_box);
-
-    prodotto = malloc(sizeof(*prodotto));
-    if(prodotto == NULL) {
-        goto out;
-    }
-    memset(prodotto, 0, sizeof(*prodotto));
-
     // Prepare output parameters
 	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome_prodotto, STR_LEN);
 	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, nome_fornitore, STR_LEN);
 
     if(mysql_stmt_bind_result(remove_box, param)) {
 		print_stmt_error(remove_box, "Unable to bind output parameters for remove box\n");
-		free(prodotto);
-		prodotto = NULL;
 		goto out;
 	}
+
+    if(mysql_stmt_store_result(remove_box)) {
+        print_stmt_error(remove_box, "Unable to store remove_box result set.");
+        goto out;
+    }
+
+    prodotto = malloc(sizeof(*prodotto));
+    if(prodotto == NULL) {
+        goto out;
+    }
+    memset(prodotto, 0, sizeof(*prodotto));
 
     while (true) {
 		status = mysql_stmt_fetch(get_product_boxes);
@@ -788,6 +804,77 @@ void do_decrease_stock(struct prodotto *prod)
 	mysql_stmt_reset(decrease_stock);
 }
 
+struct prodotti *do_get_products_list(void)
+{
+    int status;
+	size_t row = 0;
+	MYSQL_BIND param[2];
+
+    char nome_prodotto[STR_LEN];
+	char nome_fornitore[STR_LEN];
+
+	struct prodotti *prodotti = NULL;
+
+	// Run procedure
+	if(mysql_stmt_execute(get_products_list) != 0) {
+		print_stmt_error(get_products_list, "Could not execute get products list procedure");
+		goto out;
+	}
+
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome_prodotto, STR_LEN);
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, nome_fornitore, STR_LEN);
+
+	if(mysql_stmt_bind_result(get_products_list, param)) {
+		print_stmt_error(get_products_list, "Unable to bind output parameters for get products list\n");
+		goto out;
+	}
+
+    if(mysql_stmt_store_result(get_products_list)) {
+        print_stmt_error(get_products_list, "Unable to store get_products_list result set.");
+        goto out;
+    }
+
+    if(mysql_stmt_num_rows(get_products_list) == 0)
+        goto out;
+
+    prodotti = malloc(sizeof(*prodotti));
+    if(prodotti == NULL)
+        goto out;
+    memset(prodotti, 0, sizeof(*prodotti));
+    prodotti->num_prodotti = mysql_stmt_num_rows(get_products_list);
+
+    prodotti->lista_prodotti = malloc(sizeof(struct prodotto) * mysql_stmt_num_rows(get_products_list));
+    if(prodotti->lista_prodotti == NULL) {
+        free(prodotti);
+        prodotti = NULL;
+        goto out;
+    }
+
+	while (true) {
+		status = mysql_stmt_fetch(get_products_list);
+
+		if (status == 1 || status == MYSQL_NO_DATA)
+			break;
+
+		strcpy(prodotti->lista_prodotti[row].nome, nome_prodotto);
+        strcpy(prodotti->lista_prodotti[row].nome_fornitore, nome_fornitore);
+
+		row++;
+	}
+
+    out:
+	mysql_stmt_free_result(get_products_list);
+	mysql_stmt_reset(get_products_list);
+	return prodotti;
+}
+
+void dispose_products_list(struct prodotti *prodotti)
+{
+    free(prodotti->lista_prodotti);
+    free(prodotti);
+    prodotti = NULL;
+}
+
 struct prodotto *do_get_product_info(struct prodotto *prod)
 {
 	int status, cont = 0;
@@ -818,22 +905,6 @@ struct prodotto *do_get_product_info(struct prodotto *prod)
 		print_stmt_error(get_product_info, "Could not execute get product info procedure");
 		goto out;
 	}
-	
-	mysql_stmt_store_result(get_product_info);
-
-    if(mysql_stmt_num_rows(get_product_info) == 0)
-        goto out;
-	
-	prodotto = malloc(sizeof(*prodotto));
-	if(prodotto == NULL)
-		goto out;
-	memset(prodotto, 0, sizeof(*prodotto));
-	prodotto->num_usi = mysql_stmt_num_rows(get_product_info);	
-	
-	prodotto->usi = malloc(sizeof(struct descrizione) * mysql_stmt_num_rows(get_product_info));
-	if(prodotto->usi == NULL)
-		goto out;
-	memset(prodotto->usi, 0, sizeof(struct descrizione) * mysql_stmt_num_rows(get_product_info));
 
 	// Prepare output parameters
 	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome, STR_LEN);
@@ -847,12 +918,29 @@ struct prodotto *do_get_product_info(struct prodotto *prod)
 	
 	if(mysql_stmt_bind_result(get_product_info, param)) {
 		print_stmt_error(get_product_info, "Unable to bind output parameters for get product info\n");
-		free(prodotto);
-		prodotto = NULL;
 		goto out;
 	}
-	
-	while (true) {
+
+    if(mysql_stmt_store_result(get_product_info)) {
+        print_stmt_error(get_product_info, "Unable to store get_product_info result set.");
+        goto out;
+    }
+
+    if(mysql_stmt_num_rows(get_product_info) == 0)
+        goto out;
+
+    prodotto = malloc(sizeof(*prodotto));
+    if(prodotto == NULL)
+        goto out;
+    memset(prodotto, 0, sizeof(*prodotto));
+    prodotto->num_usi = mysql_stmt_num_rows(get_product_info);
+
+    prodotto->usi = malloc(sizeof(struct descrizione) * mysql_stmt_num_rows(get_product_info));
+    if(prodotto->usi == NULL)
+        goto out;
+    memset(prodotto->usi, 0, sizeof(struct descrizione) * mysql_stmt_num_rows(get_product_info));
+
+    while (true) {
 		status = mysql_stmt_fetch(get_product_info);
 
 		if (status == 1 || status == MYSQL_NO_DATA)
@@ -960,7 +1048,19 @@ struct interazioni *do_get_interacting_categories(struct prodotto *prod)
 		goto out;
 	}
 
-	mysql_stmt_store_result(get_interacting_categories);
+    // Prepare output parameters
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, cat1, STR_LEN);
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, cat2, STR_LEN);
+
+	if(mysql_stmt_bind_result(get_interacting_categories, param)) {
+		print_stmt_error(get_interacting_categories, "Unable to bind output parameters for get interacting categories\n");
+		goto out;
+	}
+
+    if(mysql_stmt_store_result(get_interacting_categories)) {
+        print_stmt_error(get_interacting_categories, "Unable to store get_interacting_categories result set.");
+        goto out;
+    }
 
     if(mysql_stmt_num_rows(get_interacting_categories) == 0)
         goto out;
@@ -977,17 +1077,6 @@ struct interazioni *do_get_interacting_categories(struct prodotto *prod)
         interazioni = NULL;
         goto out;
     }
-
-    // Prepare output parameters
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, cat1, STR_LEN);
-	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, cat2, STR_LEN);
-
-	if(mysql_stmt_bind_result(get_interacting_categories, param)) {
-		print_stmt_error(get_interacting_categories, "Unable to bind output parameters for get interacting categories\n");
-		free(interazioni);
-		interazioni = NULL;
-		goto out;
-	}
 
 	while (true) {
 		status = mysql_stmt_fetch(get_interacting_categories);
@@ -1030,27 +1119,23 @@ struct vendita *do_record_sale(void)
 		goto out;
 	}
 
-    vendita = malloc(sizeof(*vendita));
-    if(vendita == NULL)
-        goto out;
-    memset(vendita, 0, sizeof(*vendita));
-
     set_binding_param(&param[0], MYSQL_TYPE_LONG, &scontrino, sizeof(scontrino));
     set_binding_param(&param[1], MYSQL_TYPE_DATE, &giorno, sizeof(giorno));
 
     if(mysql_stmt_bind_result(record_sale, param)) {
         print_stmt_error(record_sale, "Unable to bind output parameters for record sale\n");
-        free(vendita);
-        vendita = NULL;
         goto out;
     }
 
     if (mysql_stmt_store_result(record_sale)) {
 		print_stmt_error(record_sale, "Unable to store record_sale result set.");
-        free(vendita);
-        vendita = NULL;
 		goto out;
 	}
+
+    vendita = malloc(sizeof(*vendita));
+    if(vendita == NULL)
+        goto out;
+    memset(vendita, 0, sizeof(*vendita));
 
     while (true) {
         status = mysql_stmt_fetch(record_sale);
@@ -1160,8 +1245,20 @@ struct prodotti_magazzino *do_get_stock_report(void)
 		goto out;
 	}
 
-	// Get bound parameters
-	mysql_stmt_store_result(get_stock_report);
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome, STR_LEN);
+	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, nome_fornitore, STR_LEN);
+    set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, &tipo, sizeof(tipo));
+	set_binding_param(&param[3], MYSQL_TYPE_LONG, &quantita, sizeof(quantita));
+
+	if(mysql_stmt_bind_result(get_stock_report, param)) {
+		print_stmt_error(get_stock_report, "Unable to bind output parameters for get stock report\n");
+		goto out;
+	}
+
+    if(mysql_stmt_store_result(get_stock_report)) {
+        print_stmt_error(get_stock_report, "Unable to store get_stock_report result set.");
+        goto out;
+    }
 
     prodotti = malloc(sizeof(*prodotti));
     if(prodotti == NULL)
@@ -1177,19 +1274,7 @@ struct prodotti_magazzino *do_get_stock_report(void)
     }
     memset(prodotti->prodotti, 0, sizeof(struct prodotto) * mysql_stmt_num_rows(get_stock_report));
 
-	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome, STR_LEN);
-	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, nome_fornitore, STR_LEN);
-    set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, &tipo, sizeof(tipo));
-	set_binding_param(&param[3], MYSQL_TYPE_LONG, &quantita, sizeof(quantita));
-
-	if(mysql_stmt_bind_result(get_stock_report, param)) {
-		print_stmt_error(get_stock_report, "Unable to bind output parameters for get stock report\n");
-		free(prodotti);
-		prodotti = NULL;
-		goto out;
-	}
-
-	while (true) {
+    while (true) {
 		status = mysql_stmt_fetch(get_stock_report);
 
 		if (status == 1 || status == MYSQL_NO_DATA)
@@ -1311,11 +1396,19 @@ static struct indirizzi *extract_addresses(void)
 		goto out;
 	}
 
-    indirizzi = malloc(sizeof(*indirizzi) + sizeof(struct indirizzo) * mysql_stmt_num_rows(get_info_supplier));
+    indirizzi = malloc(sizeof(*indirizzi));
     if(indirizzi == NULL)
         goto out;
-    memset(indirizzi, 0, sizeof(*indirizzi) + sizeof(struct indirizzo) * mysql_stmt_num_rows(get_info_supplier));
+    memset(indirizzi, 0, sizeof(*indirizzi));
     indirizzi->num_indirizzi = mysql_stmt_num_rows(get_info_supplier);
+
+    indirizzi->lista_indirizzi = malloc(sizeof(struct indirizzo) * mysql_stmt_num_rows(get_info_supplier));
+    if(indirizzi->lista_indirizzi == NULL) {
+        free(indirizzi);
+        indirizzi = NULL;
+        goto out;
+    }
+    memset(indirizzi->lista_indirizzi, 0, sizeof(struct indirizzo) * mysql_stmt_num_rows(get_info_supplier));
 
     while (true) {
 		status = mysql_stmt_fetch(get_info_supplier);
@@ -1359,11 +1452,19 @@ static struct recapiti *extract_contacts(void)
 		goto out;
 	}
 
-    recapiti = malloc(sizeof(*recapiti) + sizeof(struct recapito) * mysql_stmt_num_rows(get_info_supplier));
+    recapiti = malloc(sizeof(*recapiti));
     if(recapiti == NULL)
         goto out;
-    memset(recapiti, 0, sizeof(*recapiti) + sizeof(struct recapito) * mysql_stmt_num_rows(get_info_supplier));
+    memset(recapiti, 0, sizeof(*recapiti));
     recapiti->num_recapiti = mysql_stmt_num_rows(get_info_supplier);
+
+    recapiti->lista_recapiti = malloc(sizeof(struct recapito) * mysql_stmt_num_rows(get_info_supplier));
+    if(recapiti->lista_recapiti == NULL) {
+        free(recapiti);
+        recapiti = NULL;
+        goto out;
+    }
+    memset(recapiti->lista_recapiti, 0, sizeof(struct recapito) * mysql_stmt_num_rows(get_info_supplier));
 
     while (true) {
 		status = mysql_stmt_fetch(get_info_supplier);
@@ -1473,14 +1574,6 @@ struct prodotti_magazzino *do_get_supplier_products(struct fornitore *fornitore)
         goto out;
     }
 
-    mysql_stmt_store_result(get_supplier_products);
-
-    prodottiMagazzino = malloc(sizeof(*prodottiMagazzino) + sizeof(struct prodotto) * mysql_stmt_num_rows(get_supplier_products));
-    if(prodottiMagazzino == NULL)
-        goto out;
-    memset(prodottiMagazzino, 0, sizeof(*prodottiMagazzino) + sizeof(struct prodotto) * mysql_stmt_num_rows(get_supplier_products));
-    prodottiMagazzino->num_prodotti = mysql_stmt_num_rows(get_supplier_products);
-
     // Prepare output parameters
     set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome, STR_LEN);
     set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, &tipo, sizeof(tipo));
@@ -1491,10 +1584,30 @@ struct prodotti_magazzino *do_get_supplier_products(struct fornitore *fornitore)
 
     if(mysql_stmt_bind_result(get_supplier_products, param)) {
         print_stmt_error(get_supplier_products, "Unable to bind output parameters for get supplier products\n");
+        goto out;
+    }
+
+    if(mysql_stmt_store_result(get_supplier_products)) {
+        print_stmt_error(get_supplier_products, "Unable to store get_supplier_products result set.");
+        goto out;
+    }
+
+    if(mysql_stmt_num_rows(get_supplier_products) == 0)
+        goto out;
+
+    prodottiMagazzino = malloc(sizeof(*prodottiMagazzino));
+    if(prodottiMagazzino == NULL)
+        goto out;
+    memset(prodottiMagazzino, 0, sizeof(*prodottiMagazzino));
+    prodottiMagazzino->num_prodotti = mysql_stmt_num_rows(get_supplier_products);
+
+    prodottiMagazzino->prodotti = malloc(sizeof(struct prodotto) * mysql_stmt_num_rows(get_supplier_products));
+    if(prodottiMagazzino->prodotti == NULL) {
         free(prodottiMagazzino);
         prodottiMagazzino = NULL;
         goto out;
     }
+    memset(prodottiMagazzino->prodotti, 0, sizeof(struct prodotto) * mysql_stmt_num_rows(get_supplier_products));
 
     while (true) {
         status = mysql_stmt_fetch(get_supplier_products);
@@ -1670,23 +1783,6 @@ struct scatole_in_scadenza *do_get_expiry_report(void)
 		goto out;
 	}
 
-	scatoleInScadenza = malloc(sizeof(*scatoleInScadenza) + sizeof(struct scatole_prodotto) * mysql_stmt_num_rows(get_expiry_report));
-	if(scatoleInScadenza == NULL)
-		goto out;
-	memset(scatoleInScadenza, 0, sizeof(*scatoleInScadenza) + sizeof(struct scatole_prodotto) * mysql_stmt_num_rows(get_expiry_report));
-	scatoleInScadenza->num_in_scadenza = mysql_stmt_num_rows(get_expiry_report);
-
-    for(int i = 0; i < mysql_stmt_num_rows(get_expiry_report); i++) {
-        scatoleInScadenza->scatole[i].scatole = malloc(sizeof(struct scatola));
-        if(scatoleInScadenza->scatole[i].scatole == NULL)
-            goto out;
-        memset(scatoleInScadenza->scatole[i].scatole, 0, sizeof(struct scatola));
-        scatoleInScadenza->scatole[i].num_scatole = 1;
-    }
-
-	// Get bound parameters
-	mysql_stmt_store_result(get_expiry_report);
-
 	set_binding_param(&param[0], MYSQL_TYPE_LONG, &codice, sizeof(codice));
 	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, nome_prodotto, STR_LEN);
     set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, nome_fornitore, STR_LEN);
@@ -1696,10 +1792,40 @@ struct scatole_in_scadenza *do_get_expiry_report(void)
 
 	if(mysql_stmt_bind_result(get_expiry_report, param)) {
 		print_stmt_error(get_expiry_report, "Unable to bind output parameters for get expiry report\n");
-		dispose_in_scadenza(scatoleInScadenza);
-		scatoleInScadenza = NULL;
 		goto out;
 	}
+
+    if (mysql_stmt_store_result(get_expiry_report)) {
+        print_stmt_error(get_expiry_report, "Unable to store get_expiry_report result set.");
+        goto out;
+    }
+
+    scatoleInScadenza = malloc(sizeof(*scatoleInScadenza));
+    if(scatoleInScadenza == NULL)
+        goto out;
+    memset(scatoleInScadenza, 0, sizeof(*scatoleInScadenza));
+    scatoleInScadenza->num_in_scadenza = mysql_stmt_num_rows(get_expiry_report);
+
+    scatoleInScadenza->scatole = malloc(sizeof(struct scatole_prodotto) * mysql_stmt_num_rows(get_expiry_report));
+    if(scatoleInScadenza->scatole == NULL) {
+        free(scatoleInScadenza);
+        scatoleInScadenza = NULL;
+        goto out;
+    }
+    memset(scatoleInScadenza->scatole, 0, sizeof(struct scatole_prodotto) * mysql_stmt_num_rows(get_expiry_report));
+
+    for(int i = 0; i < mysql_stmt_num_rows(get_expiry_report); i++) {
+        scatoleInScadenza->scatole[i].scatole = malloc(sizeof(struct scatola));
+        if(scatoleInScadenza->scatole[i].scatole == NULL) {
+            free(scatoleInScadenza->scatole);
+            free(scatoleInScadenza);
+            scatoleInScadenza = NULL;
+            goto out;
+        }
+
+        memset(scatoleInScadenza->scatole[i].scatole, 0, sizeof(struct scatola));
+        scatoleInScadenza->scatole[i].num_scatole = 1;
+    }
 
 	while (true) {
 		status = mysql_stmt_fetch(get_expiry_report);
@@ -1728,8 +1854,9 @@ void dispose_in_scadenza(struct scatole_in_scadenza * scatoleInScadenza)
     for(int i = 0; i < scatoleInScadenza->num_in_scadenza; i++) {
         free(scatoleInScadenza->scatole[i].scatole);
     }
-
+    free(scatoleInScadenza->scatole);
     free(scatoleInScadenza);
+    scatoleInScadenza = NULL;
 }
 
 void do_add_shelf(struct scaffale *scaffale)
@@ -1793,23 +1920,23 @@ struct lettera_acquisto *do_get_purchase_letter(void)
 		goto out;
 	}
 
-	letteraAcquisto = malloc(sizeof(struct lettera_acquisto));
-	if(letteraAcquisto == NULL)
-		goto out;
-	memset(letteraAcquisto, 0, sizeof(struct lettera_acquisto));
-
-	// Get bound parameters
-	mysql_stmt_store_result(get_purchase_letter);
-
 	set_binding_param(&param[0], MYSQL_TYPE_LONG, &codice, sizeof(codice));
 	set_binding_param(&param[1], MYSQL_TYPE_DATE, &giorno, sizeof(giorno));
 
 	if(mysql_stmt_bind_result(get_purchase_letter, param)) {
 		print_stmt_error(get_purchase_letter, "Unable to bind output parameters for get purchase letter\n");
-		free(letteraAcquisto);
-		letteraAcquisto = NULL;
 		goto out;
 	}
+
+    if (mysql_stmt_store_result(get_purchase_letter)) {
+        print_stmt_error(get_purchase_letter, "Unable to store get_purchase_letter result set.");
+        goto out;
+    }
+
+    letteraAcquisto = malloc(sizeof(struct lettera_acquisto));
+    if(letteraAcquisto == NULL)
+        goto out;
+    memset(letteraAcquisto, 0, sizeof(struct lettera_acquisto));
 
 	while (true) {
 		status = mysql_stmt_fetch(get_purchase_letter);
@@ -1885,6 +2012,9 @@ static struct lettere_inviate *extract_letters(void)
         goto out;
     }
 
+    if(mysql_stmt_num_rows(get_letters_to_supplier) == 0)
+        goto out;
+
     size = mysql_stmt_num_rows(get_letters_to_supplier);
     int *num_richieste;
     num_richieste = malloc(sizeof(int) * size);
@@ -1929,6 +2059,7 @@ static struct lettere_inviate *extract_letters(void)
         lettereInviate->lettere[i].richieste = malloc(sizeof(struct prodotto_richiesto) * num_richieste[i]);
         if(lettereInviate->lettere[i].richieste == NULL) {
             print_error(conn, "Unable to allocate memory for letters struct\n");
+            free(lettereInviate->lettere);
             free(lettereInviate);
             lettereInviate = NULL;
             goto out;
@@ -2047,6 +2178,9 @@ static struct vendite *extract_sales(void)
         goto out;
     }
 
+    if(mysql_stmt_num_rows(get_sales_on_date) == 0)
+        goto out;
+
     size = mysql_stmt_num_rows(get_sales_on_date);
     int *num_prodotti;
     num_prodotti = malloc(sizeof(int) * size);
@@ -2091,6 +2225,7 @@ static struct vendite *extract_sales(void)
         vendite->listaVendite[i].prod_venduti = malloc(sizeof(struct prodotto_venduto) * num_prodotti[i]);
         if(vendite->listaVendite[i].prod_venduti == NULL) {
             print_error(conn, "Unable to allocate memory for sales struct\n");
+            free(vendite->listaVendite);
             free(vendite);
             vendite = NULL;
             goto out;
@@ -2226,22 +2361,32 @@ static struct vendite *extract_product_sales(void)
         goto out;
     }
 
-    vendite = malloc(sizeof(*vendite) + sizeof(struct vendita) * mysql_stmt_num_rows(get_product_sales));
+    vendite = malloc(sizeof(*vendite));
     if(vendite == NULL) {
         print_error(conn, "Unable to allocate memory for sales struct\n");
         goto out;
     }
-    memset(vendite, 0, sizeof(*vendite) + sizeof(struct vendita) * mysql_stmt_num_rows(get_product_sales));
+    memset(vendite, 0, sizeof(*vendite));
+    vendite->num_vendite = mysql_stmt_num_rows(get_product_sales);
+
+    vendite->listaVendite = malloc(sizeof(struct vendita) * mysql_stmt_num_rows(get_product_sales));
+    if(vendite->listaVendite == NULL) {
+        free(vendite);
+        vendite = NULL;
+        goto out;
+    }
+    memset(vendite->listaVendite, 0, sizeof(struct vendita) * mysql_stmt_num_rows(get_product_sales));
 
     for(int i = 0; i < mysql_stmt_num_rows(get_product_sales); i++) {
         vendite->listaVendite[i].prod_venduti = malloc(sizeof(struct prodotto_venduto));
         if(vendite->listaVendite[i].prod_venduti == NULL) {
             print_error(conn, "Unable to allocate memory for sales struct\n");
+            free(vendite->listaVendite);
+            free(vendite);
+            vendite = NULL;
             goto out;
         }
     }
-
-    vendite->num_vendite = mysql_stmt_num_rows(get_product_sales);
 
     while (true) {
         status = mysql_stmt_fetch(get_product_sales);
@@ -2293,7 +2438,7 @@ static void extract_product_sales_info(char *tipo, bool *ricetta)
 struct vendite *do_get_product_sales(struct prodotto *prodotto)
 {
     int status;
-    MYSQL_BIND param[2];
+    MYSQL_BIND param[4];
 
     struct vendite *vendite = NULL;
     char tipo;
@@ -2301,6 +2446,8 @@ struct vendite *do_get_product_sales(struct prodotto *prodotto)
 
     set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prodotto->nome, STR_LEN);
     set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodotto->nome_fornitore, STR_LEN);
+    set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, &tipo, sizeof(tipo));
+    set_binding_param(&param[3], MYSQL_TYPE_TINY, &ricetta, sizeof(ricetta));
 
     if(mysql_stmt_bind_param(get_product_sales, param)) {
         print_stmt_error(get_product_sales, "Could not bind input parameters");
@@ -2364,15 +2511,6 @@ struct prodotti_venduti *do_get_most_sold(void)
 		goto out;
 	}
 
-	prodottiVenduti = malloc(sizeof(*prodottiVenduti) + sizeof(struct prodotto_venduto) * mysql_stmt_num_rows(get_most_sold));
-	if(prodottiVenduti == NULL)
-		goto out;
-	memset(prodottiVenduti, 0, sizeof(*prodottiVenduti) + sizeof(struct prodotto_venduto) * mysql_stmt_num_rows(get_most_sold));
-    prodottiVenduti->num_prodotti = mysql_stmt_num_rows(get_most_sold);
-
-	// Get bound parameters
-	mysql_stmt_store_result(get_most_sold);
-
 	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, nome_prodotto, STR_LEN);
 	set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, nome_fornitore, STR_LEN);
     set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, &tipo, sizeof(tipo));
@@ -2380,10 +2518,30 @@ struct prodotti_venduti *do_get_most_sold(void)
 
 	if(mysql_stmt_bind_result(get_most_sold, param)) {
 		print_stmt_error(get_most_sold, "Unable to bind output parameters for get most sold\n");
-		free(prodottiVenduti);
-		prodottiVenduti = NULL;
 		goto out;
 	}
+
+    if (mysql_stmt_store_result(get_most_sold)) {
+        print_stmt_error(get_most_sold, "Unable to store get_most_sold result set.");
+        goto out;
+    }
+
+    if(mysql_stmt_num_rows(get_most_sold) == 0)
+        goto out;
+
+    prodottiVenduti = malloc(sizeof(*prodottiVenduti));
+    if(prodottiVenduti == NULL)
+        goto out;
+    memset(prodottiVenduti, 0, sizeof(*prodottiVenduti));
+    prodottiVenduti->num_prodotti = mysql_stmt_num_rows(get_most_sold);
+
+    prodottiVenduti->prod_venduti = malloc(sizeof(struct prodotto_venduto) * mysql_stmt_num_rows(get_most_sold));
+    if(prodottiVenduti->prod_venduti == NULL) {
+        free(prodottiVenduti);
+        prodottiVenduti = NULL;
+        goto out;
+    }
+    memset(prodottiVenduti->prod_venduti, 0, sizeof(struct prodotto_venduto) * mysql_stmt_num_rows(get_most_sold));
 
 	while (true) {
 		status = mysql_stmt_fetch(get_most_sold);

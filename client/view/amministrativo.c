@@ -7,9 +7,9 @@
 
 int get_administrative_action(void)
 {
-	int options[25] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	int options[26] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
                        11, 12, 13, 14, 15, 16, 17, 18,
-                       19, 20, 21, 22, 23, 24, 25};
+                       19, 20, 21, 22, 23, 24, 25, 26};
 	int op;
 
 	clear_screen();
@@ -41,9 +41,10 @@ int get_administrative_action(void)
     puts("22) Print sales made on a given date");
     puts("23) Print sales including a product");
     puts("24) Print most sold products list");
-	puts("25) Quit\n");
+    puts("25) Print products list");
+	puts("26) Quit\n");
 
-	op = alt_multi_choice("Select an option: ", options, 25);
+	op = alt_multi_choice("Select an option: ", options, 26);
 	return op - 1;
 }
 
@@ -356,6 +357,19 @@ void print_most_sold(struct prodotti_venduti *prodottiVenduti)
                prodottiVenduti->prod_venduti[i].nome_fornitore,
                prodottiVenduti->prod_venduti[i].tipo == 'M' ? "Medicinale" : "Cosmetico",
                prodottiVenduti->prod_venduti[i].quantita);
+    }
+    puts("\n");
+}
+
+void print_products_list_administrative(struct prodotti *prodotti)
+{
+    clear_screen();
+    puts("** Products list **\n");
+
+    for(int i = 0; i < prodotti->num_prodotti; i++) {
+        printf("* %s (%s)\n",
+               prodotti->lista_prodotti[i].nome,
+               prodotti->lista_prodotti[i].nome_fornitore);
     }
     puts("\n");
 }

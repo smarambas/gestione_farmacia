@@ -9,6 +9,7 @@ enum actions {
 	PRINT_CATS,
 	PRINT_SHELVES,
 	RECORD_SALE,
+    PROD_LIST,
 	QUIT,
 	END_OF_ACTIONS
 };
@@ -24,3 +25,4 @@ extern void print_lista_scaffali_medical(struct magazzino *magazzino);
 extern void get_sold_product_info(struct prodotto_venduto *prod);
 extern void print_boxes_codes(struct scatole_prodotto *scatoleProdotto);
 extern void select_box_to_remove(struct scatola *box, struct scatole_prodotto *scatoleProdotto);
+extern void print_products_list_medical(struct prodotti *prodotti);
