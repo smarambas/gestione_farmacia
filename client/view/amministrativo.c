@@ -144,7 +144,7 @@ void print_supplier_info(struct fornitore *fornitore)
         printf("Supplier: %s\n", fornitore->nome);
         printf("Addresses: \n");
         for (i = 0; i < num_indirizzi; i++) {
-            printf("\t%d) %s, %s %s %s\n", i + 1,
+            printf("\t* %s, %s %s %s\n",
                    fornitore->indirizzi->lista_indirizzi[i].citta,
                    fornitore->indirizzi->lista_indirizzi[i].via,
                    fornitore->indirizzi->lista_indirizzi[i].num_civico,
@@ -156,11 +156,12 @@ void print_supplier_info(struct fornitore *fornitore)
         num_recapiti = fornitore->recapiti->num_recapiti;
         printf("Contacts: \n");
         for (i = 0; i < num_recapiti; i++) {
-            printf("\t%d) %s %s\n", i + 1,
+            printf("\t* %s %s\n",
                    fornitore->recapiti->lista_recapiti[i].contatto,
                    fornitore->recapiti->lista_recapiti[i].preferito ? "(preferred)" : "");
         }
     }
+    puts("\n");
 }
 
 void print_supplier_prod(struct prodotti_magazzino *prodottiMagazzino)
@@ -184,7 +185,9 @@ void print_supplier_prod(struct prodotti_magazzino *prodottiMagazzino)
 
 void get_supplier_address(struct indirizzo *indirizzo, bool is_add)
 {
-    clear_screen();
+    if(is_add)
+        clear_screen();
+
     puts("** Select an address **\n");
 
     get_input("Insert city: ", STR_LEN, indirizzo->citta, false);
@@ -197,7 +200,9 @@ void get_supplier_address(struct indirizzo *indirizzo, bool is_add)
 
 void get_supplier_contact(struct recapito *recapito, bool is_add)
 {
-    clear_screen();
+    if(is_add)
+        clear_screen();
+
     puts("** Select a contact **\n");
 
     get_input("Insert contact: ", STR_LEN, recapito->contatto, false);

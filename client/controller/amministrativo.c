@@ -158,6 +158,8 @@ static bool add_address(void)
 
 static bool remove_address(void)
 {
+    get_supplier_info();
+
     struct indirizzo indirizzo;
     memset(&indirizzo, 0, sizeof(indirizzo));
     get_supplier_address(&indirizzo, false);
@@ -184,6 +186,8 @@ static bool add_contact(void)
 
 static bool remove_contact(void)
 {
+    get_supplier_info();
+
     struct recapito recapito;
     memset(&recapito, 0, sizeof(recapito));
     get_supplier_contact(&recapito, false);
