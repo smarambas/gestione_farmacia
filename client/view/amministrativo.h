@@ -17,7 +17,6 @@ enum actions {
     ADD_CONTACT,
     REMOVE_CONTACT,
     ADD_BOX,
-    REMOVE_BOX,
     GET_EXPIRY_REPORT,
     ADD_SHELF,
     UPDATE_SHELF,
@@ -27,6 +26,7 @@ enum actions {
     GET_SALES_PROD,
     GET_MOST_SOLD,
     PROD_LIST,
+    INCREASE_STOCK,
     QUIT,
     END_OF_ACTIONS
 };
@@ -55,3 +55,5 @@ extern void print_sales_on_date(struct vendite *vendite, char *giorno);
 extern void print_sales_product(struct vendite *vendite, struct prodotto *prodotto);
 extern void print_most_sold(struct prodotti_venduti *prodottiVenduti);
 extern void print_products_list_administrative(struct prodotti *prodotti);
+extern void get_new_quantity(struct prodotto *prodotto);
+extern void print_message_administrative(char *message);

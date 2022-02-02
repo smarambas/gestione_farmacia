@@ -51,6 +51,7 @@ static MYSQL_STMT *get_letters_to_supplier;
 static MYSQL_STMT *get_sales_on_date;
 static MYSQL_STMT *get_product_sales;
 static MYSQL_STMT *get_most_sold;
+static MYSQL_STMT *increase_stock;
 
 
 static void close_prepared_stmts(void)
@@ -199,6 +200,10 @@ static void close_prepared_stmts(void)
 		mysql_stmt_close(get_most_sold);
 		get_most_sold = NULL;
 	}
+    if(increase_stock) {
+		mysql_stmt_close(increase_stock);
+		increase_stock = NULL;
+	}
 }
 
 
@@ -327,6 +332,10 @@ static bool initialize_prepared_stmts(role_t for_role)
 			}
             if(!setup_prepared_stmt(&get_products_list, "call lista_prodotti()", conn)) {
 				print_stmt_error(get_products_list, "Unable to initialize get products list statement\n");
+				return false;
+			}
+            if(!setup_prepared_stmt(&increase_stock, "call incrementa_giacenza(?, ?, ?)", conn)) {
+				print_stmt_error(increase_stock, "Unable to initialize increase stock statement\n");
 				return false;
 			}
 			break;
@@ -661,6 +670,9 @@ struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
         goto out;
     }
 
+    if(mysql_stmt_num_rows(get_product_boxes) == 0)
+        goto out;
+
     scatoleProdotto = malloc(sizeof(*scatoleProdotto));
     if(scatoleProdotto == NULL)
         goto out;
@@ -695,6 +707,13 @@ struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod)
 	mysql_stmt_free_result(get_product_boxes);
 	mysql_stmt_reset(get_product_boxes);
 	return scatoleProdotto;
+}
+
+void dispose_scatole_prodotto(struct scatole_prodotto *scatoleProdotto)
+{
+    free(scatoleProdotto->scatole);
+    free(scatoleProdotto);
+    scatoleProdotto = NULL;
 }
 
 struct prodotto *do_remove_box(struct scatola *box)
@@ -734,6 +753,9 @@ struct prodotto *do_remove_box(struct scatola *box)
         print_stmt_error(remove_box, "Unable to store remove_box result set.");
         goto out;
     }
+
+    if(mysql_stmt_num_rows(remove_box) == 0)
+        goto out;
 
     prodotto = malloc(sizeof(*prodotto));
     if(prodotto == NULL) {
@@ -947,7 +969,6 @@ struct prodotto *do_get_product_info(struct prodotto *prod)
 			break;
 
 		if(row == 0) {
-
 			strcpy(prodotto->nome, nome);
 			strcpy(prodotto->nome_fornitore, nome_fornitore);
 			strcpy(&(prodotto->tipo), &tipo);
@@ -1205,11 +1226,14 @@ void do_add_cosmetic(struct prodotto *prodotto)
 
 void do_add_medicine(struct prodotto *prodotto)
 {
-    MYSQL_BIND param[2];
+    MYSQL_BIND param[5];
 
 	// Bind parameters
 	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prodotto->nome, strlen(prodotto->nome));
     set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodotto->nome_fornitore, strlen(prodotto->nome_fornitore));
+    set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, prodotto->categoria, strlen(prodotto->categoria));
+    set_binding_param(&param[3], MYSQL_TYPE_TINY, &(prodotto->ricetta), sizeof(prodotto->ricetta));
+    set_binding_param(&param[4], MYSQL_TYPE_TINY, &(prodotto->mutuabile), sizeof(prodotto->mutuabile));
 
 	if(mysql_stmt_bind_param(add_medicine, param) != 0) {
 		print_stmt_error(add_medicine, "Could not bind parameters for add_medicine");
@@ -1259,6 +1283,9 @@ struct prodotti_magazzino *do_get_stock_report(void)
         print_stmt_error(get_stock_report, "Unable to store get_stock_report result set.");
         goto out;
     }
+
+    if(mysql_stmt_num_rows(get_stock_report) == 0)
+        goto out;
 
     prodotti = malloc(sizeof(*prodotti));
     if(prodotti == NULL)
@@ -1396,6 +1423,9 @@ static struct indirizzi *extract_addresses(void)
 		goto out;
 	}
 
+    if(mysql_stmt_num_rows(get_info_supplier) == 0)
+        goto out;
+
     indirizzi = malloc(sizeof(*indirizzi));
     if(indirizzi == NULL)
         goto out;
@@ -1443,14 +1473,17 @@ static struct recapiti *extract_contacts(void)
 	set_binding_param(&param[1], MYSQL_TYPE_TINY, &preferito, sizeof(preferito));
 
     if(mysql_stmt_bind_result(get_info_supplier, param)) {
-		print_stmt_error(get_info_supplier, "Unable to bind parameters for extract_addresses\n");
+		print_stmt_error(get_info_supplier, "Unable to bind parameters for extract_contacts\n");
 		goto out;
 	}
 
     if (mysql_stmt_store_result(get_info_supplier)) {
-		print_stmt_error(get_info_supplier, "Unable to store addresses information result set.");
+		print_stmt_error(get_info_supplier, "Unable to store contacts information result set.");
 		goto out;
 	}
+
+    if(mysql_stmt_num_rows(get_info_supplier) == 0)
+        goto out;
 
     recapiti = malloc(sizeof(*recapiti));
     if(recapiti == NULL)
@@ -1517,10 +1550,10 @@ struct fornitore *do_get_info_supplier(struct fornitore *fornitore)
 			indirizzi = extract_addresses();
 			if(indirizzi == NULL)
 				goto next;
-		} else {
+		} else if(count == 1) {
 			recapiti = extract_contacts();
             if(recapiti == NULL)
-                goto out;
+                goto next;
 		}
 
     next:
@@ -1544,6 +1577,14 @@ struct fornitore *do_get_info_supplier(struct fornitore *fornitore)
 	mysql_stmt_free_result(get_info_supplier);
 	mysql_stmt_reset(get_info_supplier);
 	return info_fornitore;
+}
+
+void dispose_supplier(struct fornitore *fornitore)
+{
+    free(fornitore->recapiti);
+    free(fornitore->indirizzi);
+    free(fornitore);
+    fornitore = NULL;
 }
 
 struct prodotti_magazzino *do_get_supplier_products(struct fornitore *fornitore)
@@ -1693,8 +1734,8 @@ void do_add_contact(struct recapito *recapito, struct fornitore *fornitore)
 
 	// Bind parameters
 	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, recapito->contatto, strlen(recapito->contatto));
-    set_binding_param(&param[3], MYSQL_TYPE_TINY, &(recapito->preferito), sizeof(recapito->preferito));
-    set_binding_param(&param[4], MYSQL_TYPE_VAR_STRING, fornitore->nome, strlen(fornitore->nome));
+    set_binding_param(&param[1], MYSQL_TYPE_TINY, &(recapito->preferito), sizeof(recapito->preferito));
+    set_binding_param(&param[2], MYSQL_TYPE_VAR_STRING, fornitore->nome, strlen(fornitore->nome));
 
 	if(mysql_stmt_bind_param(add_contact, param) != 0) {
 		print_stmt_error(add_contact, "Could not bind input parameters");
@@ -1799,6 +1840,9 @@ struct scatole_in_scadenza *do_get_expiry_report(void)
         print_stmt_error(get_expiry_report, "Unable to store get_expiry_report result set.");
         goto out;
     }
+
+    if(mysql_stmt_num_rows(get_expiry_report) == 0)
+        goto out;
 
     scatoleInScadenza = malloc(sizeof(*scatoleInScadenza));
     if(scatoleInScadenza == NULL)
@@ -1983,7 +2027,7 @@ static struct lettere_inviate *extract_letters(void)
 {
     int status;
     int i = -1;
-    size_t letter = 0;
+    int letter = -1;
     MYSQL_BIND param[4];
 
     int codice;
@@ -2078,13 +2122,12 @@ static struct lettere_inviate *extract_letters(void)
         if(old_codice != codice) {
             old_codice = codice;
             i = 0;
+            letter++;
 
             lettereInviate->lettere[letter].codice = codice;
             mysql_date_to_string(&giorno, lettereInviate->lettere[letter].giorno);
             strcpy(lettereInviate->lettere[letter].richieste[i].nome_prodotto, nome_prodotto);
             lettereInviate->lettere[letter].richieste[i].quantita = quantita;
-
-            letter++;
         }
         else {
             strcpy(lettereInviate->lettere[letter].richieste[i].nome_prodotto, nome_prodotto);
@@ -2118,10 +2161,6 @@ struct lettere_inviate *do_get_letters_to_supplier(struct fornitore *fornitore)
     }
 
     lettereInviate = extract_letters();
-    if(lettereInviate == NULL) {
-        print_error(conn, "Unable to extract letters\n");
-        goto out;
-    }
 
     out:
     mysql_stmt_free_result(get_letters_to_supplier);
@@ -2143,7 +2182,7 @@ static struct vendite *extract_sales(void)
 {
     int status;
     int i = -1;
-    size_t sale = 0;
+    int sale = -1;
     MYSQL_BIND param[7];
 
     int scontrino;
@@ -2244,6 +2283,7 @@ static struct vendite *extract_sales(void)
         if(old_scontrino != scontrino) {
             old_scontrino = scontrino;
             i = 0;
+            sale++;
 
             vendite->listaVendite[sale].scontrino = scontrino;
             strcpy(vendite->listaVendite[sale].prod_venduti[i].nome_prodotto, nome_prodotto);
@@ -2260,8 +2300,6 @@ static struct vendite *extract_sales(void)
                 strcpy(vendite->listaVendite[sale].prod_venduti[i].medico, "");
             else
                 strcpy(vendite->listaVendite[sale].prod_venduti[i].medico, medico);
-
-            sale++;
         }
         else {
             strcpy(vendite->listaVendite[sale].prod_venduti[i].nome_prodotto, nome_prodotto);
@@ -2310,10 +2348,6 @@ struct vendite *do_get_sales_on_date(char giorno[DATE_LEN])
     }
 
     vendite = extract_sales();
-    if(vendite == NULL) {
-        print_error(conn, "Unable to extract sales\n");
-        goto out;
-    }
 
     out:
     mysql_stmt_free_result(get_sales_on_date);
@@ -2360,6 +2394,9 @@ static struct vendite *extract_product_sales(void)
         print_stmt_error(get_product_sales, "Unable to store extract product sales result set.\n");
         goto out;
     }
+
+    if(mysql_stmt_num_rows(get_product_sales) == 0)
+        goto out;
 
     vendite = malloc(sizeof(*vendite));
     if(vendite == NULL) {
@@ -2437,7 +2474,7 @@ static void extract_product_sales_info(char *tipo, bool *ricetta)
 
 struct vendite *do_get_product_sales(struct prodotto *prodotto)
 {
-    int status;
+    int status, cont = 0;
     MYSQL_BIND param[4];
 
     struct vendite *vendite = NULL;
@@ -2465,12 +2502,13 @@ struct vendite *do_get_product_sales(struct prodotto *prodotto)
             extract_product_sales_info(&tipo, &ricetta);    //extract out parameters
             goto next;
 		}
-        else {
+        else if(cont == 0){
             vendite = extract_product_sales();
             if(vendite == NULL) {
                 print_error(conn, "Unable to extract product sales\n");
                 goto out;
             }
+            cont++;
             goto next;
         }
 
@@ -2568,4 +2606,28 @@ void dispose_most_sold(struct prodotti_venduti *prodottiVenduti)
     free(prodottiVenduti->prod_venduti);
     free(prodottiVenduti);
     prodottiVenduti = NULL;
+}
+
+void do_increase_stock(struct prodotto *prodotto)
+{
+    MYSQL_BIND param[3];
+
+	// Bind parameters
+	set_binding_param(&param[0], MYSQL_TYPE_VAR_STRING, prodotto->nome, strlen(prodotto->nome));
+    set_binding_param(&param[1], MYSQL_TYPE_VAR_STRING, prodotto->nome_fornitore, strlen(prodotto->nome_fornitore));
+    set_binding_param(&param[2], MYSQL_TYPE_LONG, &(prodotto->quantita), sizeof(prodotto->quantita));
+
+	if(mysql_stmt_bind_param(increase_stock, param) != 0) {
+		print_stmt_error(increase_stock, "Could not bind input parameters");
+		return;
+	}
+
+	// Run procedure
+	if(mysql_stmt_execute(increase_stock) != 0) {
+		print_stmt_error(increase_stock, "Could not execute increase stock procedure");
+		return;
+	}
+
+	mysql_stmt_free_result(increase_stock);
+	mysql_stmt_reset(increase_stock);
 }

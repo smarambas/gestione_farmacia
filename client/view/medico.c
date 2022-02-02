@@ -7,7 +7,8 @@
 
 int get_medical_action(void)
 {
-	int options[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+	int options[10] = {1, 2, 3, 4, 5,
+                       6, 7, 8, 9, 10};
     int op;
 
 	clear_screen();
@@ -23,9 +24,10 @@ int get_medical_action(void)
 	puts("6) Print shelves list");
 	puts("7) Record sale");
     puts("8) Print products list");
-	puts("9) Quit\n");
+    puts("9) Print product boxes list");
+	puts("10) Quit\n");
 
-    op = alt_multi_choice("Select an option: ", options, 9);
+    op = alt_multi_choice("Select an option: ", options, 10);
 	return op - 1;
 }
 
@@ -96,7 +98,7 @@ void get_new_category(char *categoria)
     clear_screen();
     puts("** Insert new category **\n");
 
-	get_input("Insert category:\n", STR_LEN, categoria, false);
+	get_input("Insert category: ", STR_LEN, categoria, false);
 }
 
 void get_new_interaction(struct interazione *inter)
@@ -104,8 +106,8 @@ void get_new_interaction(struct interazione *inter)
     clear_screen();
     puts("** Insert new interaction **\n");
 
-	get_input("Insert first category:\n", STR_LEN, inter->cat1, false);
-    get_input("Insert second category:\n", STR_LEN, inter->cat2, false);
+	get_input("Insert first category: ", STR_LEN, inter->cat1, false);
+    get_input("Insert second category: ", STR_LEN, inter->cat2, false);
 }
 
 void print_interacting_categories(struct interazioni *interazioni)
@@ -127,8 +129,17 @@ void print_lista_scaffali_medical(struct magazzino *magazzino)
     clear_screen();
     puts("** Shelves codes and categories **\n");
 
+    int drawer_min, drawer_max;
+
     for(int i = 0; i < magazzino->num_scaffali; i++) {
-        printf("Shelf #%d ---> %s\n", magazzino->scaffali[i].codice, magazzino->scaffali[i].categoria);
+        drawer_min = (magazzino->scaffali[i].codice * 10 - 10) + 1;
+        drawer_max = drawer_min + 9;
+
+        printf("Shelf #%d (%d-%d) ---> %s\n",
+               magazzino->scaffali[i].codice,
+               drawer_min,
+               drawer_max,
+               magazzino->scaffali[i].categoria);
     }
 }
 
@@ -201,4 +212,26 @@ void print_products_list_medical(struct prodotti *prodotti)
                prodotti->lista_prodotti[i].nome_fornitore);
     }
     puts("\n");
+}
+
+void print_product_boxes(struct scatole_prodotto *scatoleProdotto)
+{
+    clear_screen();
+    puts("** Product boxes list **\n");
+
+    printf("Product: %s\nSupplier: %s\n\n",
+           scatoleProdotto->nome_prodotto, scatoleProdotto->nome_fornitore);
+
+    for(int i = 0; i < scatoleProdotto->num_scatole; i++) {
+        printf("* Box #%d (Shelf #%d ---> Drawer #%d)\n",
+               scatoleProdotto->scatole[i].codice,
+               scatoleProdotto->scatole[i].scaff.codice,
+               scatoleProdotto->scatole[i].cassetto);
+    }
+    puts("\n");
+}
+
+void print_message_medical(char *message)
+{
+    printf("\n%s\n", message);
 }

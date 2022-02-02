@@ -78,6 +78,8 @@ static bool print_shelves(void)
         print_lista_scaffali_medical(magazzino);
         magazzino_dispose(magazzino);
     }
+    else
+        print_message_medical("No shelf found!");
 
     return false;
 }
@@ -126,13 +128,15 @@ static bool record_sale(void)
                             do_remove_box(&box);    //I'm not interested in the result set here
                         }
                     }
+                    else
+                        print_message_medical("No boxes for the product!");
                 }
 
                 free(info_prodotto);
                 info_prodotto = NULL;
             }
             else {
-                puts("Invalid product...\n");
+                print_message_medical("Invalid product...");
             }
 
             res = yes_or_no("\nDo you want to insert another product?", 'y', 'n', false, true);
@@ -152,6 +156,32 @@ static bool prod_list(void)
         print_products_list_medical(prodotti);
         dispose_products_list(prodotti);
     }
+    else
+        print_message_medical("No product found!");
+
+    return false;
+}
+
+static bool prod_boxes(void)
+{
+    struct prodotto_venduto prodotto;
+    memset(&prodotto, 0, sizeof(prodotto));
+    struct prodotto prod;
+    memset(&prod, 0, sizeof(prod));
+    get_product_name_medical(&prod);
+
+    strcpy(prodotto.nome_prodotto, prod.nome);
+    strcpy(prodotto.nome_fornitore, prod.nome_fornitore);
+
+    struct scatole_prodotto *scatoleProdotto;
+    scatoleProdotto = do_get_product_boxes(&prodotto);
+    if(scatoleProdotto != NULL) {
+        print_product_boxes(scatoleProdotto);
+
+        dispose_scatole_prodotto(scatoleProdotto);
+    }
+    else
+        print_message_medical("No box found for the product!");
 
     return false;
 }
@@ -173,6 +203,7 @@ static struct {
     {.action = PRINT_SHELVES, .control = print_shelves},
     {.action = RECORD_SALE, .control = record_sale},
     {.action = PROD_LIST, .control = prod_list},
+    {.action = PROD_BOXES, .control = prod_boxes},
 	{.action = QUIT, .control = quit}
 };
 

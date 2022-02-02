@@ -28,6 +28,8 @@ static bool print_shelves(void)
         print_lista_scaffali_administrative(magazzino);
         magazzino_dispose(magazzino);
     }
+    else
+        print_message_administrative("No shelf found!");
 
     return false;
 }
@@ -63,6 +65,8 @@ static bool get_stock_report(void)
         print_stock_report(prodottiMagazzino);
         dispose_stock_report(prodottiMagazzino);
     }
+    else
+        print_message_administrative("No product found!");
 
     return false;
 }
@@ -102,15 +106,19 @@ static bool remove_supplier(void)
 
 static bool get_supplier_info(void)
 {
-    struct fornitore *fornitore;
-    memset(fornitore, 0, sizeof(*fornitore));
-    get_supplier_name(fornitore);
+    struct fornitore fornitore;
+    memset(&fornitore, 0, sizeof(fornitore));
+    get_supplier_name(&fornitore);
 
-    fornitore = do_get_info_supplier(fornitore);
-    if(fornitore != NULL) {
-        print_supplier_info(fornitore);
-        free(fornitore);
+    struct fornitore *infoFornitore;
+
+    infoFornitore = do_get_info_supplier(&fornitore);
+    if(infoFornitore != NULL) {
+        print_supplier_info(infoFornitore);
+        dispose_supplier(infoFornitore);
     }
+    else
+        print_message_administrative("Can't find selected supplier!");
 
     return false;
 }
@@ -128,7 +136,7 @@ static bool get_supplier_prod(void)
         dispose_stock_report(prodottiMagazzino);
     }
     else
-        puts("Selected supplier does not exist!\n");
+        print_message_administrative("Can't find selected supplier products!");
 
     return false;
 }
@@ -215,11 +223,26 @@ static bool remove_box(void)
     return false;
 }
 
-static void remove_box_expiry(void)
+static void remove_box_expiry(struct scatole_in_scadenza *scatoleInScadenza)
 {
     struct scatola scatola;
     memset(&scatola, 0, sizeof(scatola));
-    get_box_code(&scatola, false);
+
+    bool is_end = false;
+
+    while(!is_end) {
+        get_box_code(&scatola, false);
+
+        for(int i = 0; i < scatoleInScadenza->num_in_scadenza; i++) {
+            if(scatola.codice == scatoleInScadenza->scatole[i].scatole[0].codice) {
+                is_end = true;
+                break;
+            }
+        }
+
+        if(!is_end)
+            puts("\nThe selected box is not expiring!\n");
+    }
 
     struct prodotto *prodotto = do_remove_box(&scatola);
     if(prodotto != NULL) {
@@ -238,13 +261,15 @@ static bool get_expiry_report(void)
         print_expiry_report(scatoleInScadenza);
 
         while(yes_or_no("Do you want to remove a box?", 'y', 'n', false, true)) {
-            remove_box_expiry();
+            remove_box_expiry(scatoleInScadenza);
 
             printf("\n");
         }
 
         dispose_in_scadenza(scatoleInScadenza);
     }
+    else
+        print_message_administrative("There are no expiring boxes!");
 
     return false;
 }
@@ -283,7 +308,7 @@ static bool send_letter(void)
             get_product_for_letter(&prodottoRichiesto);
 
             do_add_product_to_letter(letteraAcquisto, &prodottoRichiesto);
-        }while(yes_or_no("Do you want to add another product to the letter?", 'y', 'n', false, true));
+        }while(yes_or_no("\nDo you want to add another product to the letter?", 'y', 'n', false, true));
     }
 
     free(letteraAcquisto);
@@ -303,6 +328,8 @@ static bool get_supplier_letters(void)
         print_supplier_letters(lettereInviate, &fornitore);
         dispose_letters(lettereInviate);
     }
+    else
+        print_message_administrative("No letter found for the selected supplier!");
 
     return false;
 }
@@ -318,6 +345,8 @@ static bool get_sales_date(void)
         print_sales_on_date(vendite, giorno);
         dispose_sales(vendite);
     }
+    else
+        print_message_administrative("No sale found for the selected day!");
 
     return false;
 }
@@ -334,6 +363,8 @@ static bool get_sales_prod(void)
         print_sales_product(vendite, &prod);
         dispose_sales(vendite);
     }
+    else
+        print_message_administrative("No sale found for the selected product!");
 
     return false;
 }
@@ -346,6 +377,8 @@ static bool get_most_sold(void)
         print_most_sold(prodottiVenduti);
         dispose_most_sold(prodottiVenduti);
     }
+    else
+        print_message_administrative("No sale found!");
 
     return false;
 }
@@ -358,6 +391,19 @@ static bool prod_list(void)
         print_products_list_administrative(prodotti);
         dispose_products_list(prodotti);
     }
+    else
+        print_message_administrative("No product found!");
+
+    return false;
+}
+
+static bool increase_stock(void)
+{
+    struct prodotto prod;
+    memset(&prod, 0, sizeof(prod));
+    get_new_quantity(&prod);
+
+    do_increase_stock(&prod);
 
     return false;
 }
@@ -386,7 +432,6 @@ static struct {
     {.action = ADD_CONTACT, .control = add_contact},
     {.action = REMOVE_CONTACT, .control = remove_contact},
     {.action = ADD_BOX, .control = add_box},
-    {.action = REMOVE_BOX, .control = remove_box},
     {.action = GET_EXPIRY_REPORT, .control = get_expiry_report},
     {.action = ADD_SHELF, .control = add_shelf},
     {.action = UPDATE_SHELF, .control = update_shelf},
@@ -396,6 +441,7 @@ static struct {
     {.action = GET_SALES_PROD, .control = get_sales_prod},
     {.action = GET_MOST_SOLD, .control = get_most_sold},
     {.action = PROD_LIST, .control = prod_list},
+    {.action = INCREASE_STOCK, .control = increase_stock},
 	{.action = QUIT, .control = quit}
 };
 

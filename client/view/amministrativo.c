@@ -32,16 +32,16 @@ int get_administrative_action(void)
     puts("13) Add contact to supplier");
     puts("14) Remove contact");
     puts("15) Add box");
-    puts("16) Remove box");
-    puts("17) Get expiry report");
-    puts("18) Add shelf");
-    puts("19) Update shelf category");
-    puts("20) Send purchase letter to supplier");
-    puts("21) Print letters sent to supplier");
-    puts("22) Print sales made on a given date");
-    puts("23) Print sales including a product");
-    puts("24) Print most sold products list");
-    puts("25) Print products list");
+    puts("16) Get expiry report");
+    puts("17) Add shelf");
+    puts("18) Update shelf category");
+    puts("19) Send purchase letter to supplier");
+    puts("20) Print letters sent to supplier");
+    puts("21) Print sales made on a given date");
+    puts("22) Print sales including a product");
+    puts("23) Print most sold products list");
+    puts("24) Print products list");
+    puts("25) Increase product stock quantity");
 	puts("26) Quit\n");
 
 	op = alt_multi_choice("Select an option: ", options, 26);
@@ -70,8 +70,17 @@ void print_lista_scaffali_administrative(struct magazzino *magazzino)
     clear_screen();
     puts("** Shelves codes and categories **\n");
 
+    int drawer_min, drawer_max;
+
     for(int i = 0; i < magazzino->num_scaffali; i++) {
-        printf("Shelf #%d ---> %s\n", magazzino->scaffali[i].codice, magazzino->scaffali[i].categoria);
+        drawer_min = (magazzino->scaffali[i].codice * 10 - 10) + 1;
+        drawer_max = drawer_min + 9;
+
+        printf("Shelf #%d (%d-%d) ---> %s\n",
+               magazzino->scaffali[i].codice,
+               drawer_min,
+               drawer_max,
+               magazzino->scaffali[i].categoria);
     }
 }
 
@@ -91,7 +100,12 @@ void get_medicine(struct prodotto *prod)
 
 	get_input("Insert product name: ", STR_LEN, prod->nome, false);
     get_input("Insert product supplier name: ", STR_LEN, prod->nome_fornitore, false);
-    get_input("Insert product category: ", STR_LEN, prod->categoria, false);
+    do{
+        get_input("Insert product category: ", STR_LEN, prod->categoria, false);
+
+        if(strlen(prod->categoria) < 1)
+            puts("\nCategory can't be empty!");
+    }while(strlen(prod->categoria) < 1);
     prod->ricetta = yes_or_no("Does the product require a prescription? ", 'y', 'n', false, true);
     prod->mutuabile = yes_or_no("Can the product be prescribed on the National Health Service? ", 'y', 'n', false, true);
 }
@@ -125,23 +139,27 @@ void print_supplier_info(struct fornitore *fornitore)
 
     int num_indirizzi, num_recapiti, i;
 
-    num_indirizzi = fornitore->indirizzi->num_indirizzi;
-    num_recapiti = fornitore->recapiti->num_recapiti;
-
-    printf("Name: %s\n", fornitore->nome);
-    printf("Addresses: \n");
-    for(i = 0; i < num_indirizzi; i++) {
-        printf("\t%d) %s, %s %s %s\n", i+1,
-               fornitore->indirizzi->lista_indirizzi[i].citta,
-               fornitore->indirizzi->lista_indirizzi[i].via,
-               fornitore->indirizzi->lista_indirizzi[i].num_civico,
-               fornitore->indirizzi->lista_indirizzi[i].fatturazione ? "(preferred)" : "");
+    if(fornitore->indirizzi != NULL) {
+        num_indirizzi = fornitore->indirizzi->num_indirizzi;
+        printf("Supplier: %s\n", fornitore->nome);
+        printf("Addresses: \n");
+        for (i = 0; i < num_indirizzi; i++) {
+            printf("\t%d) %s, %s %s %s\n", i + 1,
+                   fornitore->indirizzi->lista_indirizzi[i].citta,
+                   fornitore->indirizzi->lista_indirizzi[i].via,
+                   fornitore->indirizzi->lista_indirizzi[i].num_civico,
+                   fornitore->indirizzi->lista_indirizzi[i].fatturazione ? "(billing address)" : "");
+        }
     }
-    printf("Contacts: \n");
-    for(i = 0; i < num_recapiti; i++) {
-        printf("\t%d) %s %s\n", i+1,
-               fornitore->recapiti->lista_recapiti[i].contatto,
-               fornitore->recapiti->lista_recapiti[i].preferito ? "(preferred)" : "");
+
+    if(fornitore->recapiti != NULL) {
+        num_recapiti = fornitore->recapiti->num_recapiti;
+        printf("Contacts: \n");
+        for (i = 0; i < num_recapiti; i++) {
+            printf("\t%d) %s %s\n", i + 1,
+                   fornitore->recapiti->lista_recapiti[i].contatto,
+                   fornitore->recapiti->lista_recapiti[i].preferito ? "(preferred)" : "");
+        }
     }
 }
 
@@ -273,6 +291,7 @@ void print_supplier_letters(struct lettere_inviate *lettereInviate, struct forni
                    lettereInviate->lettere[i].richieste[j].nome_prodotto,
                    lettereInviate->lettere[i].richieste[j].quantita);
         }
+        printf("\n");
     }
     puts("\n");
 }
@@ -321,7 +340,7 @@ void print_sales_product(struct vendite *vendite, struct prodotto *prodotto)
     for(int i = 0; i < vendite->num_vendite; i++) {
         if(vendite->listaVendite[i].prod_venduti[0].tipo == 'M') {
             if(vendite->listaVendite[i].prod_venduti[0].ricetta) {
-                printf("* Sale #%d (%s)\n\t- CF: %s\n\t  Doctor: %s\n\t  Quantity: %d\n\n",
+                printf("* Sale #%d (%s)\n  CF: %s\n  Doctor: %s\n  Quantity: %d\n\n",
                        vendite->listaVendite[i].scontrino,
                        vendite->listaVendite[i].giorno,
                        vendite->listaVendite[i].prod_venduti[0].cf,
@@ -329,7 +348,7 @@ void print_sales_product(struct vendite *vendite, struct prodotto *prodotto)
                        vendite->listaVendite[i].prod_venduti[0].quantita);
             }
             else {
-                printf("* Sale #%d (%s)\n\t- CF: %s\n\t  Quantity: %d\n\n",
+                printf("* Sale #%d (%s)\n  CF: %s\n  Quantity: %d\n\n",
                        vendite->listaVendite[i].scontrino,
                        vendite->listaVendite[i].giorno,
                        vendite->listaVendite[i].prod_venduti[0].cf,
@@ -337,7 +356,7 @@ void print_sales_product(struct vendite *vendite, struct prodotto *prodotto)
             }
         }
         else {
-            printf("* Sale #%d (%s)\n\t- Quantity: %d\n\n",
+            printf("* Sale #%d (%s)\n  Quantity: %d\n\n",
                        vendite->listaVendite[i].scontrino,
                        vendite->listaVendite[i].giorno,
                        vendite->listaVendite[i].prod_venduti[0].quantita);
@@ -372,4 +391,30 @@ void print_products_list_administrative(struct prodotti *prodotti)
                prodotti->lista_prodotti[i].nome_fornitore);
     }
     puts("\n");
+}
+
+void get_new_quantity(struct prodotto *prodotto)
+{
+    clear_screen();
+    puts("** Update product stock quantity **\n");
+
+    int quantity;
+
+    get_input("Insert product name: ", STR_LEN, prodotto->nome, false);
+    get_input("Insert product supplier: ", STR_LEN, prodotto->nome_fornitore, false);
+    while(true) {
+        quantity = get_int_input("Insert stock quantity to add: ");
+
+        if(quantity > 0) {
+            prodotto->quantita = quantity;
+            break;
+        }
+        else
+            puts("Stock quantity can't be zero or negative!\n");
+    }
+}
+
+void print_message_administrative(char *message)
+{
+    printf("\n%s\n", message);
 }
