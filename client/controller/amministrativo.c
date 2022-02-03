@@ -212,21 +212,6 @@ static bool add_box(void)
     return false;
 }
 
-static bool remove_box(void)
-{
-    struct scatola scatola;
-    memset(&scatola, 0, sizeof(scatola));
-    get_box_code(&scatola, true);
-
-    struct prodotto *prodotto = do_remove_box(&scatola);
-    if(prodotto != NULL) {
-        do_decrease_stock(prodotto);
-        free(prodotto);
-    }
-
-    return false;
-}
-
 static void remove_box_expiry(struct scatole_in_scadenza *scatoleInScadenza)
 {
     struct scatola scatola;
@@ -250,6 +235,7 @@ static void remove_box_expiry(struct scatole_in_scadenza *scatoleInScadenza)
 
     struct prodotto *prodotto = do_remove_box(&scatola);
     if(prodotto != NULL) {
+        prodotto->quantita = 1; //one box removed
         do_decrease_stock(prodotto);
         free(prodotto);
     }

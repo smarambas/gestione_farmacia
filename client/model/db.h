@@ -176,7 +176,6 @@ extern void do_add_product_description(struct prodotto *prodotto, struct descriz
 extern struct magazzino * do_get_shelves(void);
 extern void magazzino_dispose(struct magazzino *magazzino);
 extern struct prodotto *do_remove_box(struct scatola *box);
-extern void do_update_stock(struct prodotto *prodotto);
 extern void do_decrease_stock(struct prodotto *prod);
 extern struct prodotti *do_get_products_list(void);
 extern void dispose_products_list(struct prodotti *prodotti);

@@ -148,7 +148,20 @@ void get_sold_product_info(struct prodotto_venduto *prod)
     clear_screen();
     puts("** Add product to sale **\n");
 
-    prod->quantita = get_int_input("Insert sold quantity: ");
+    bool is_end = false;
+    int quantity;
+
+    while(!is_end) {
+        quantity = get_int_input("Insert sold quantity: ");
+
+        if(quantity > 0) {
+            prod->quantita = quantity;
+            is_end = true;
+        }
+        else
+            puts("Sold quantity can't be negative or zero!\n");
+    }
+
     if(prod->tipo == 'M') {
         get_input("Insert codice fiscale: ", STR_LEN, prod->cf, false);
         if(prod->ricetta)
