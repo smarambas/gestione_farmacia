@@ -186,9 +186,10 @@ extern void do_add_interaction(struct interazione *inter);
 extern struct interazioni *do_get_interacting_categories(struct prodotto *prod);
 extern void dispose_interactions(struct interazioni *interazioni);
 extern struct vendita *do_record_sale(void);
-extern void do_add_product_to_sale(struct vendita *vendita, struct prodotto_venduto *prodottoVenduto);
+extern bool do_add_product_to_sale(struct vendita *vendita, struct prodotto_venduto *prodottoVenduto);
 extern struct scatole_prodotto *do_get_product_boxes(struct prodotto_venduto *prod);
 extern void dispose_scatole_prodotto(struct scatole_prodotto *scatoleProdotto);
+extern void do_remove_sale(struct vendita *vendita);
 
 extern void do_add_cosmetic(struct prodotto *prodotto);
 extern void do_add_medicine(struct prodotto *prodotto);

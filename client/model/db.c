@@ -26,6 +26,7 @@ static MYSQL_STMT *get_interacting_categories;
 static MYSQL_STMT *record_sale;
 static MYSQL_STMT *add_product_to_sale;
 static MYSQL_STMT *get_product_boxes;
+static MYSQL_STMT *remove_sale;
 
 //ammin procedures
 static MYSQL_STMT *add_cosmetic;
@@ -70,6 +71,10 @@ static void close_prepared_stmts(void)
     if(get_product_boxes) {
         mysql_stmt_close(get_product_boxes);
 		get_product_boxes = NULL;
+    }
+    if(remove_sale) {
+        mysql_stmt_close(remove_sale);
+		remove_sale = NULL;
     }
 	if(remove_box) {
 		mysql_stmt_close(remove_box);
@@ -377,6 +382,10 @@ static bool initialize_prepared_stmts(role_t for_role)
 			}
             if(!setup_prepared_stmt(&get_products_list, "call lista_prodotti()", conn)) {
                 print_stmt_error(get_products_list, "Unable to initialize get products list statement\n");
+                return false;
+            }
+            if(!setup_prepared_stmt(&remove_sale, "call rimuovi_vendita(?)", conn)) {
+                print_stmt_error(remove_sale, "Unable to initialize remove sale statement\n");
                 return false;
             }
 			break;
@@ -862,6 +871,28 @@ void dispose_products_list(struct prodotti *prodotti)
     prodotti = NULL;
 }
 
+void do_remove_sale(struct vendita *vendita)
+{
+    MYSQL_BIND param[1];
+
+    // Bind parameters
+    set_binding_param(&param[0], MYSQL_TYPE_LONG, &(vendita->scontrino), sizeof(vendita->scontrino));
+
+    if(mysql_stmt_bind_param(remove_sale, param) != 0) {
+        print_stmt_error(remove_sale, "Could not bind parameters for remove_sale");
+        return;
+    }
+
+    // Run procedure
+    if(mysql_stmt_execute(remove_sale) != 0) {
+        print_stmt_error(remove_sale, "Could not execute remove sale procedure");
+        return;
+    }
+
+    mysql_stmt_free_result(remove_sale);
+    mysql_stmt_reset(remove_sale);
+}
+
 struct prodotto *do_get_product_info(struct prodotto *prod)
 {
 	int status, cont = 0;
@@ -1139,7 +1170,7 @@ struct vendita *do_record_sale(void)
     return vendita;
 }
 
-void do_add_product_to_sale(struct vendita *vendita, struct prodotto_venduto *prodottoVenduto)
+bool do_add_product_to_sale(struct vendita *vendita, struct prodotto_venduto *prodottoVenduto)
 {
     MYSQL_BIND param[6];
 
@@ -1153,17 +1184,18 @@ void do_add_product_to_sale(struct vendita *vendita, struct prodotto_venduto *pr
 
 	if(mysql_stmt_bind_param(add_product_to_sale, param) != 0) {
 		print_stmt_error(add_product_to_sale, "Could not bind parameters for add_product_to_sale");
-		return;
+		return false;
 	}
 
 	// Run procedure
 	if(mysql_stmt_execute(add_product_to_sale) != 0) {
 		print_stmt_error(add_product_to_sale, "Could not execute add product to sale procedure");
-		return;
+		return false;
 	}
 
 	mysql_stmt_free_result(add_product_to_sale);
 	mysql_stmt_reset(add_product_to_sale);
+    return true;
 }
 
 void do_add_cosmetic(struct prodotto *prodotto)

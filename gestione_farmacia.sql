@@ -1394,6 +1394,22 @@ END$$
 DELIMITER ;
 
 -- -----------------------------------------------------
+-- procedure rimuovi_vendita
+-- -----------------------------------------------------
+
+USE `gestione-farmacia`;
+DROP procedure IF EXISTS `gestione-farmacia`.`rimuovi_vendita`;
+
+DELIMITER $$
+USE `gestione-farmacia`$$
+CREATE PROCEDURE `rimuovi_vendita` (IN var_vendita INT)
+BEGIN
+	delete from `Vendite` where `Nr_scontrino` = var_vendita;
+END$$
+
+DELIMITER ;
+
+-- -----------------------------------------------------
 -- View `gestione-farmacia`.`Volume_vendite_prodotti`
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `gestione-farmacia`.`Volume_vendite_prodotti`;
@@ -1458,6 +1474,7 @@ GRANT EXECUTE ON procedure `gestione-farmacia`.`lista_scaffali` TO 'personale_me
 GRANT EXECUTE ON procedure `gestione-farmacia`.`lista_scatole_prodotto` TO 'personale_medico';
 GRANT EXECUTE ON procedure `gestione-farmacia`.`decrementa_giacenza` TO 'personale_medico';
 GRANT EXECUTE ON procedure `gestione-farmacia`.`lista_prodotti` TO 'personale_medico';
+GRANT EXECUTE ON procedure `gestione-farmacia`.`rimuovi_vendita` TO 'personale_medico';
 SET SQL_MODE = '';
 DROP USER IF EXISTS personale_amministrativo;
 SET SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
@@ -1550,7 +1567,6 @@ INSERT INTO `gestione-farmacia`.`Categorie` (`Nome`) VALUES ('Vaccino anti Covid
 INSERT INTO `gestione-farmacia`.`Categorie` (`Nome`) VALUES ('Antiepilettico');
 INSERT INTO `gestione-farmacia`.`Categorie` (`Nome`) VALUES ('Antidolorifico');
 INSERT INTO `gestione-farmacia`.`Categorie` (`Nome`) VALUES ('Corticosteroide');
-INSERT INTO `gestione-farmacia`.`Categorie` (`Nome`) VALUES ('FANS');
 INSERT INTO `gestione-farmacia`.`Categorie` (`Nome`) VALUES ('Diuretico');
 INSERT INTO `gestione-farmacia`.`Categorie` (`Nome`) VALUES ('Oppioide');
 
@@ -1587,7 +1603,7 @@ COMMIT;
 START TRANSACTION;
 USE `gestione-farmacia`;
 INSERT INTO `gestione-farmacia`.`Interazioni` (`Categoria1`, `Categoria2`) VALUES ('Antinfiammatorio', 'Anticoagulante');
-INSERT INTO `gestione-farmacia`.`Interazioni` (`Categoria1`, `Categoria2`) VALUES ('Analgesico', 'FANS');
+INSERT INTO `gestione-farmacia`.`Interazioni` (`Categoria1`, `Categoria2`) VALUES ('Analgesico', 'Antinfiammatorio');
 INSERT INTO `gestione-farmacia`.`Interazioni` (`Categoria1`, `Categoria2`) VALUES ('Antiepilettico', 'Oppioide');
 INSERT INTO `gestione-farmacia`.`Interazioni` (`Categoria1`, `Categoria2`) VALUES ('Antidolorifico', 'Anticoagulante');
 

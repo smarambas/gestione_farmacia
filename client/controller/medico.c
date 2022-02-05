@@ -86,6 +86,7 @@ static bool print_shelves(void)
 
 static bool record_sale(void)
 {
+    int count = 0;
     bool res = true;
 
     struct scatole_prodotto *scatoleProdotto = NULL;
@@ -110,7 +111,8 @@ static bool record_sale(void)
                 prodottoVenduto.ricetta = info_prodotto->ricetta;
 
                 get_sold_product_info(&prodottoVenduto);
-                do_add_product_to_sale(vendita, &prodottoVenduto);
+                if(do_add_product_to_sale(vendita, &prodottoVenduto))
+                    count++;
 
                 if(info_prodotto->tipo == 'M') {
                     scatoleProdotto = do_get_product_boxes(&prodottoVenduto);
@@ -141,6 +143,9 @@ static bool record_sale(void)
 
             res = yes_or_no("\nDo you want to insert another product?", 'y', 'n', false, true);
         } while(res);
+
+        if(count == 0)
+            do_remove_sale(vendita);    //remove empty sale
 
         free(vendita);
     }
