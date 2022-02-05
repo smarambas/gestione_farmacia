@@ -1565,7 +1565,7 @@ USE `gestione-farmacia`;
 INSERT INTO `gestione-farmacia`.`Prodotti` (`Nome`, `Fornitore`, `Tipo`, `Quantita`, `Categoria`, `Necessita_ricetta`, `Mutuabile`) VALUES ('Tachipirina 500mg', 'Angelini', 'M', 2, 'Antipiretico', 0, 1);
 INSERT INTO `gestione-farmacia`.`Prodotti` (`Nome`, `Fornitore`, `Tipo`, `Quantita`, `Categoria`, `Necessita_ricetta`, `Mutuabile`) VALUES ('Moment 200mg', 'Angelini', 'M', 0, 'Analgesico', 0, 1);
 INSERT INTO `gestione-farmacia`.`Prodotti` (`Nome`, `Fornitore`, `Tipo`, `Quantita`, `Categoria`, `Necessita_ricetta`, `Mutuabile`) VALUES ('Comirnaty', 'Pfizer', 'M', 3, 'Vaccino anti Covid19', 0, 0);
-INSERT INTO `gestione-farmacia`.`Prodotti` (`Nome`, `Fornitore`, `Tipo`, `Quantita`, `Categoria`, `Necessita_ricetta`, `Mutuabile`) VALUES ('Colluttorio', 'Curasept', 'M', 2, 'Antibatterico', 1, 1);
+INSERT INTO `gestione-farmacia`.`Prodotti` (`Nome`, `Fornitore`, `Tipo`, `Quantita`, `Categoria`, `Necessita_ricetta`, `Mutuabile`) VALUES ('Collutorio', 'Curasept', 'M', 2, 'Antibatterico', 1, 1);
 INSERT INTO `gestione-farmacia`.`Prodotti` (`Nome`, `Fornitore`, `Tipo`, `Quantita`, `Categoria`, `Necessita_ricetta`, `Mutuabile`) VALUES ('Lichtena crema', 'Giuliani', 'C', 5, NULL, 0, 0);
 INSERT INTO `gestione-farmacia`.`Prodotti` (`Nome`, `Fornitore`, `Tipo`, `Quantita`, `Categoria`, `Necessita_ricetta`, `Mutuabile`) VALUES ('Aulin 100mg', 'Angelini', 'M', 3, 'Antinfiammatorio', 1, 1);
 INSERT INTO `gestione-farmacia`.`Prodotti` (`Nome`, `Fornitore`, `Tipo`, `Quantita`, `Categoria`, `Necessita_ricetta`, `Mutuabile`) VALUES ('Tantum rosa', 'Angelini', 'C', 5, NULL, 0, 0);
@@ -1663,8 +1663,8 @@ START TRANSACTION;
 USE `gestione-farmacia`;
 INSERT INTO `gestione-farmacia`.`Scatole_medicinale` (`Codice`, `Prodotto`, `Fornitore`, `Scadenza`, `Cassetto`, `Scaffale`) VALUES (1, 'Tachipirina 500mg', 'Angelini', '2024-05-01', 1, 1);
 INSERT INTO `gestione-farmacia`.`Scatole_medicinale` (`Codice`, `Prodotto`, `Fornitore`, `Scadenza`, `Cassetto`, `Scaffale`) VALUES (2, 'Tachipirina 500mg', 'Angelini', '2024-05-01', 1, 1);
-INSERT INTO `gestione-farmacia`.`Scatole_medicinale` (`Codice`, `Prodotto`, `Fornitore`, `Scadenza`, `Cassetto`, `Scaffale`) VALUES (3, 'Colluttorio', 'Curasept', '2022-03-01', 11, 2);
-INSERT INTO `gestione-farmacia`.`Scatole_medicinale` (`Codice`, `Prodotto`, `Fornitore`, `Scadenza`, `Cassetto`, `Scaffale`) VALUES (4, 'Colluttorio', 'Curasept', '2023-02-28', 12, 2);
+INSERT INTO `gestione-farmacia`.`Scatole_medicinale` (`Codice`, `Prodotto`, `Fornitore`, `Scadenza`, `Cassetto`, `Scaffale`) VALUES (3, 'Collutorio', 'Curasept', '2022-03-01', 11, 2);
+INSERT INTO `gestione-farmacia`.`Scatole_medicinale` (`Codice`, `Prodotto`, `Fornitore`, `Scadenza`, `Cassetto`, `Scaffale`) VALUES (4, 'Collutorio', 'Curasept', '2023-02-28', 12, 2);
 INSERT INTO `gestione-farmacia`.`Scatole_medicinale` (`Codice`, `Prodotto`, `Fornitore`, `Scadenza`, `Cassetto`, `Scaffale`) VALUES (5, 'Aulin 100mg', 'Angelini', '2022-02-28', 21, 3);
 INSERT INTO `gestione-farmacia`.`Scatole_medicinale` (`Codice`, `Prodotto`, `Fornitore`, `Scadenza`, `Cassetto`, `Scaffale`) VALUES (6, 'Aulin 100mg', 'Angelini', '2022-04-04', 21, 3);
 INSERT INTO `gestione-farmacia`.`Scatole_medicinale` (`Codice`, `Prodotto`, `Fornitore`, `Scadenza`, `Cassetto`, `Scaffale`) VALUES (7, 'Aulin 100mg', 'Angelini', '2022-03-01', 22, 3);
@@ -1848,6 +1848,27 @@ BEGIN
     end if;
     if(var_scadenza < var_cur) then
 		signal sqlstate '45000' set message_text = "The box is already expired!";
+    end if;
+END$$
+
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Richieste_BEFORE_INSERT` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Richieste_BEFORE_INSERT` BEFORE INSERT ON `Richieste` FOR EACH ROW
+BEGIN
+	declare var_fornitore varchar(45);
+    
+    select `Fornitore` 
+    from `Richieste`
+    where `Lettera` = new.`Lettera`
+    limit 1
+    into var_fornitore;
+    
+    if(var_fornitore is not NULL) then
+		if(new.`Fornitore` <> var_fornitore) then
+			signal sqlstate '45000' set message_text = "You can't send a letter to different suppliers!";
+        end if;
     end if;
 END$$
 
