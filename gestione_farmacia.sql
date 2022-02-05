@@ -133,7 +133,7 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `gestione-farmacia`.`Cassetti` ;
 
 CREATE TABLE IF NOT EXISTS `gestione-farmacia`.`Cassetti` (
-  `Codice` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `Codice` INT UNSIGNED NOT NULL,
   `Scaffale` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`Codice`, `Scaffale`),
   INDEX `fk_Cassetto_1_idx` (`Scaffale` ASC) VISIBLE,
@@ -691,6 +691,7 @@ BEGIN
 	declare var_id int;
     declare var_i int;
     declare var_num_cassetti int;
+    declare var_id_cassetto int;
     
 	declare exit handler for sqlexception
     begin
@@ -704,6 +705,7 @@ BEGIN
         
         select last_insert_id() into var_id;
         
+        set var_id_cassetto = (var_id * 10 - 10) + 1;
 		set var_i = 0;
 		set var_num_cassetti = 10;
 		
@@ -712,7 +714,9 @@ BEGIN
 				leave ins_loop;
 			end if;
 			
-			insert into `Cassetti`(`Scaffale`) values (var_id);
+			insert into `Cassetti` values (var_id_cassetto, var_id);
+            
+            set var_id_cassetto = var_id_cassetto + 1;
 			set var_i = var_i + 1;
 		end loop;
 	commit;
