@@ -1285,7 +1285,7 @@ BEGIN
     end;
     
 	set transaction read only;
-    set transaction isolation level read committed;
+    set transaction isolation level serializable;
     start transaction;
 		select `Nome_prodotto`, `Nome_fornitore`, `Tipo`, `Quantita_venduta`
 		from `Volume_vendite_prodotti`
