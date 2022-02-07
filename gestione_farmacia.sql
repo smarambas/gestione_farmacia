@@ -1461,146 +1461,6 @@ CREATE  OR REPLACE VIEW `Volume_vendite_con_ricetta` AS
 SELECT `Nome` AS `Nome_prodotto`, `Prodotti`.`Fornitore` AS `Nome_fornitore`, `Tipo`, SUM(`Vendite_con_ricetta`.`Quantita`) AS `Quantita_venduta`
 FROM `Vendite` JOIN `Vendite_con_ricetta` ON `Nr_scontrino` = `Vendita` JOIN `Prodotti` ON `Prodotto` = `Nome` AND `Vendite_con_ricetta`.`Fornitore` = `Prodotti`.`Fornitore`
 GROUP BY `Nome_prodotto`, `Nome_fornitore`, `Tipo`;
-USE `gestione-farmacia`;
-
-DELIMITER $$
-
-USE `gestione-farmacia`$$
-DROP TRIGGER IF EXISTS `gestione-farmacia`.`Prodotti_BEFORE_UPDATE` $$
-USE `gestione-farmacia`$$
-CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Prodotti_BEFORE_UPDATE` BEFORE UPDATE ON `Prodotti` FOR EACH ROW
-BEGIN
-	declare var_giacenza_reale int;
-    
-    if(old.`Tipo` = 'M') then
-		select count(*)
-		from `Scatole_medicinale`
-		where `Prodotto` = new.`Nome` and `Scatole_medicinale`.`Fornitore` = new.`Fornitore`
-		into var_giacenza_reale;
-        
-		if(new.`Quantita` > var_giacenza_reale) then
-			signal sqlstate '45000' set message_text = "Product quantity doesn't correspond to stock quantity!";
-		end if;
-    end if;
-END$$
-
-
-USE `gestione-farmacia`$$
-DROP TRIGGER IF EXISTS `gestione-farmacia`.`Scaffali_BEFORE_UPDATE` $$
-USE `gestione-farmacia`$$
-CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Scaffali_BEFORE_UPDATE` BEFORE UPDATE ON `Scaffali` FOR EACH ROW
-BEGIN
-	declare var_quantita int;
-    
-    select count(*)
-    from `Scatole_medicinale` 
-    where `Scaffale` = new.Codice
-    into var_quantita;
-    
-    if(var_quantita > 0) then
-		signal sqlstate '45001' set message_text = "The shelf is not empty";
-    end if;
-END$$
-
-
-USE `gestione-farmacia`$$
-DROP TRIGGER IF EXISTS `gestione-farmacia`.`Scatole_medicinale_BEFORE_INSERT` $$
-USE `gestione-farmacia`$$
-CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Scatole_medicinale_BEFORE_INSERT` BEFORE INSERT ON `Scatole_medicinale` FOR EACH ROW
-BEGIN
-	declare var_cat_scaffale varchar(45);
-    declare var_cat varchar(45);
-    declare var_scadenza date;
-    declare var_cur date;
-    
-    select `Categoria` from `Scaffali` where `Codice` = new.Scaffale into var_cat_scaffale;
-    select `Categoria` from `Prodotti` where `Nome` = new.Prodotto and `Fornitore` = new.Fornitore into var_cat;
-    
-    set var_scadenza = new.Scadenza;
-    set var_cur = current_date();
-    
-    if(var_cat_scaffale <> var_cat) then
-		signal sqlstate '45000' set message_text = "The chosen drawer doesn't correspond to the category";
-    end if;
-    if(var_scadenza < var_cur) then
-		signal sqlstate '45000' set message_text = "The box is already expired!";
-    end if;
-END$$
-
-
-USE `gestione-farmacia`$$
-DROP TRIGGER IF EXISTS `gestione-farmacia`.`Richieste_BEFORE_INSERT` $$
-USE `gestione-farmacia`$$
-CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Richieste_BEFORE_INSERT` BEFORE INSERT ON `Richieste` FOR EACH ROW
-BEGIN
-	declare var_fornitore varchar(45);
-    
-    select `Fornitore` 
-    from `Richieste`
-    where `Lettera` = new.`Lettera`
-    limit 1
-    into var_fornitore;
-    
-    if(var_fornitore is not NULL) then
-		if(new.`Fornitore` <> var_fornitore) then
-			signal sqlstate '45000' set message_text = "You can't send a letter to different suppliers!";
-        end if;
-    end if;
-END$$
-
-
-USE `gestione-farmacia`$$
-DROP TRIGGER IF EXISTS `gestione-farmacia`.`Vendite_cosmetico_BEFORE_INSERT` $$
-USE `gestione-farmacia`$$
-CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Vendite_cosmetico_BEFORE_INSERT` BEFORE INSERT ON `Vendite_cosmetico` FOR EACH ROW
-BEGIN
-	declare var_quantita int;
-    declare var_quantita_reale int;
-    
-    set var_quantita = new.Quantita;
-    select `Quantita` from `Prodotti` where `Nome` = new.Prodotto and `Fornitore` = new.Fornitore into var_quantita_reale;
-    
-    if(var_quantita > var_quantita_reale or var_quantita <= 0) then
-		signal sqlstate '45001' set message_text = "You can't sell more products than the stock quantity!";
-    end if;
-END$$
-
-
-USE `gestione-farmacia`$$
-DROP TRIGGER IF EXISTS `gestione-farmacia`.`Vendite_senza_ricetta_BEFORE_INSERT` $$
-USE `gestione-farmacia`$$
-CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Vendite_senza_ricetta_BEFORE_INSERT` BEFORE INSERT ON `Vendite_senza_ricetta` FOR EACH ROW
-BEGIN
-	declare var_quantita int;
-    declare var_quantita_reale int;
-    
-    set var_quantita = new.Quantita;
-    select `Quantita` from `Prodotti` where `Nome` = new.Prodotto and `Fornitore` = new.Fornitore into var_quantita_reale;
-    
-    if(var_quantita > var_quantita_reale or var_quantita <= 0) then
-		signal sqlstate '45001' set message_text = "You can't sell more products than the stock quantity!";
-    end if;
-END$$
-
-
-USE `gestione-farmacia`$$
-DROP TRIGGER IF EXISTS `gestione-farmacia`.`Vendite_con_ricetta_BEFORE_INSERT` $$
-USE `gestione-farmacia`$$
-CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Vendite_con_ricetta_BEFORE_INSERT` BEFORE INSERT ON `Vendite_con_ricetta` FOR EACH ROW
-BEGIN
-	declare var_quantita int;
-    declare var_quantita_reale int;
-    
-    set var_quantita = new.Quantita;
-    select `Quantita` from `Prodotti` where `Nome` = new.Prodotto and `Fornitore` = new.Fornitore into var_quantita_reale;
-    
-    if(var_quantita > var_quantita_reale or var_quantita <= 0) then
-		signal sqlstate '45001' set message_text = "You can't sell more products than the stock quantity!";
-    end if;
-END$$
-
-
-DELIMITER ;
 SET SQL_MODE = '';
 DROP USER IF EXISTS personale_medico;
 SET SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
@@ -1945,3 +1805,183 @@ INSERT INTO `gestione-farmacia`.`Utenti` (`Username`, `Password`, `Ruolo`) VALUE
 
 COMMIT;
 
+USE `gestione-farmacia`;
+
+DELIMITER $$
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Indirizzi_BEFORE_INSERT` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Indirizzi_BEFORE_INSERT` BEFORE INSERT ON `Indirizzi` FOR EACH ROW
+BEGIN
+	declare var_count int;
+    
+    select sum(`Fatturazione`)
+    from `Indirizzi`
+    where `Fornitore` = new.`Fornitore`
+    into var_count;
+    
+    set var_count = var_count + new.`Fatturazione`;
+    
+    if(var_count > 1) then
+		signal sqlstate '45000' set message_text = "Only one address can be the billing address for the supplier!";
+    end if;
+END$$
+
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Prodotti_BEFORE_UPDATE` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Prodotti_BEFORE_UPDATE` BEFORE UPDATE ON `Prodotti` FOR EACH ROW
+BEGIN
+	declare var_giacenza_reale int;
+    
+    if(old.`Tipo` = 'M') then
+		select count(*)
+		from `Scatole_medicinale`
+		where `Prodotto` = new.`Nome` and `Scatole_medicinale`.`Fornitore` = new.`Fornitore`
+		into var_giacenza_reale;
+        
+		if(new.`Quantita` > var_giacenza_reale) then
+			signal sqlstate '45000' set message_text = "Product quantity doesn't correspond to stock quantity!";
+		end if;
+    end if;
+END$$
+
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Scaffali_BEFORE_UPDATE` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Scaffali_BEFORE_UPDATE` BEFORE UPDATE ON `Scaffali` FOR EACH ROW
+BEGIN
+	declare var_quantita int;
+    
+    select count(*)
+    from `Scatole_medicinale` 
+    where `Scaffale` = new.Codice
+    into var_quantita;
+    
+    if(var_quantita > 0) then
+		signal sqlstate '45001' set message_text = "The shelf is not empty";
+    end if;
+END$$
+
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Scatole_medicinale_BEFORE_INSERT` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Scatole_medicinale_BEFORE_INSERT` BEFORE INSERT ON `Scatole_medicinale` FOR EACH ROW
+BEGIN
+	declare var_cat_scaffale varchar(45);
+    declare var_cat varchar(45);
+    declare var_scadenza date;
+    declare var_cur date;
+    
+    select `Categoria` from `Scaffali` where `Codice` = new.Scaffale into var_cat_scaffale;
+    select `Categoria` from `Prodotti` where `Nome` = new.Prodotto and `Fornitore` = new.Fornitore into var_cat;
+    
+    set var_scadenza = new.Scadenza;
+    set var_cur = current_date();
+    
+    if(var_cat_scaffale <> var_cat) then
+		signal sqlstate '45000' set message_text = "The chosen drawer doesn't correspond to the category";
+    end if;
+    if(var_scadenza < var_cur) then
+		signal sqlstate '45000' set message_text = "The box is already expired!";
+    end if;
+END$$
+
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Richieste_BEFORE_INSERT` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Richieste_BEFORE_INSERT` BEFORE INSERT ON `Richieste` FOR EACH ROW
+BEGIN
+	declare var_fornitore varchar(45);
+    
+    select `Fornitore` 
+    from `Richieste`
+    where `Lettera` = new.`Lettera`
+    limit 1
+    into var_fornitore;
+    
+    if(var_fornitore is not NULL) then
+		if(new.`Fornitore` <> var_fornitore) then
+			signal sqlstate '45000' set message_text = "You can't send a letter to different suppliers!";
+        end if;
+    end if;
+END$$
+
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Vendite_cosmetico_BEFORE_INSERT` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Vendite_cosmetico_BEFORE_INSERT` BEFORE INSERT ON `Vendite_cosmetico` FOR EACH ROW
+BEGIN
+	declare var_quantita int;
+    declare var_quantita_reale int;
+    
+    set var_quantita = new.Quantita;
+    select `Quantita` from `Prodotti` where `Nome` = new.Prodotto and `Fornitore` = new.Fornitore into var_quantita_reale;
+    
+    if(var_quantita > var_quantita_reale or var_quantita <= 0) then
+		signal sqlstate '45001' set message_text = "You can't sell more products than the stock quantity!";
+    end if;
+END$$
+
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Vendite_senza_ricetta_BEFORE_INSERT` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Vendite_senza_ricetta_BEFORE_INSERT` BEFORE INSERT ON `Vendite_senza_ricetta` FOR EACH ROW
+BEGIN
+	declare var_quantita int;
+    declare var_quantita_reale int;
+    
+    set var_quantita = new.Quantita;
+    select `Quantita` from `Prodotti` where `Nome` = new.Prodotto and `Fornitore` = new.Fornitore into var_quantita_reale;
+    
+    if(var_quantita > var_quantita_reale or var_quantita <= 0) then
+		signal sqlstate '45001' set message_text = "You can't sell more products than the stock quantity!";
+    end if;
+END$$
+
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Vendite_con_ricetta_BEFORE_INSERT` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Vendite_con_ricetta_BEFORE_INSERT` BEFORE INSERT ON `Vendite_con_ricetta` FOR EACH ROW
+BEGIN
+	declare var_quantita int;
+    declare var_quantita_reale int;
+    
+    set var_quantita = new.Quantita;
+    select `Quantita` from `Prodotti` where `Nome` = new.Prodotto and `Fornitore` = new.Fornitore into var_quantita_reale;
+    
+    if(var_quantita > var_quantita_reale or var_quantita <= 0) then
+		signal sqlstate '45001' set message_text = "You can't sell more products than the stock quantity!";
+    end if;
+END$$
+
+
+USE `gestione-farmacia`$$
+DROP TRIGGER IF EXISTS `gestione-farmacia`.`Recapiti_BEFORE_INSERT` $$
+USE `gestione-farmacia`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `gestione-farmacia`.`Recapiti_BEFORE_INSERT` BEFORE INSERT ON `Recapiti` FOR EACH ROW
+BEGIN
+	declare var_count int;
+    
+    select sum(`Preferito`)
+    from `Recapiti`
+    where `Fornitore` = new.`Fornitore`
+    into var_count;
+    
+    set var_count = var_count + new.`Preferito`;
+    
+    if(var_count > 1) then
+		signal sqlstate '45000' set message_text = "Only one contact can be the preferred for the supplier!";
+    end if;
+END$$
+
+
+DELIMITER ;
