@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS `gestione-farmacia`.`Richieste` (
     FOREIGN KEY (`Prodotto` , `Fornitore`)
     REFERENCES `gestione-farmacia`.`Prodotti` (`Nome` , `Fornitore`)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS `gestione-farmacia`.`Vendite_cosmetico` (
     FOREIGN KEY (`Prodotto` , `Fornitore`)
     REFERENCES `gestione-farmacia`.`Prodotti` (`Nome` , `Fornitore`)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS `gestione-farmacia`.`Vendite_senza_ricetta` (
     FOREIGN KEY (`Prodotto` , `Fornitore`)
     REFERENCES `gestione-farmacia`.`Prodotti` (`Nome` , `Fornitore`)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
@@ -332,7 +332,7 @@ CREATE TABLE IF NOT EXISTS `gestione-farmacia`.`Vendite_con_ricetta` (
     FOREIGN KEY (`Prodotto` , `Fornitore`)
     REFERENCES `gestione-farmacia`.`Prodotti` (`Nome` , `Fornitore`)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
